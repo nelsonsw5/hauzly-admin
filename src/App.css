@@ -235,7 +235,7 @@ button {
 .main-content {
   width: 100%;
   padding: 2rem;
-  margin: 0 2rem;
+  margin: 0 auto;
   box-sizing: border-box;
 }
 
@@ -604,6 +604,7 @@ button {
   background-size: 60px 60px, 30px 30px;
   animation: particleFloat 25s linear infinite, particleRotate 40s linear infinite;
   opacity: 0.4;
+  pointer-events: none;
 }
 
 .hero-section::after {
@@ -622,6 +623,7 @@ button {
       transparent 80%);
   animation: megaShimmer 4s ease-in-out infinite;
   mix-blend-mode: overlay;
+  pointer-events: none;
 }
 
 /* Additional animated layer */
@@ -643,6 +645,7 @@ button {
   animation: conicRotate 20s linear infinite;
   opacity: 0.6;
   mix-blend-mode: soft-light;
+  pointer-events: none;
 }
 
 .hero-section h1 {
