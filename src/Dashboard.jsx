@@ -138,11 +138,28 @@ function Dashboard() {
     })
 
     const current = enriched.filter(r => {
-      const s = (r.status || r.computedStatus || '').toString().toLowerCase()
-      if (['active', 'in_progress', 'in-progress', 'ongoing'].includes(s)) return true
-      if (r.scheduledAtParsed && isSameDay(r.scheduledAtParsed, now)) return true
-      return false
+      const { routeStart, routeEnd } = deriveRouteTimes(r)
+      const inWindow = !!routeStart && !!routeEnd && now >= routeStart && now <= routeEnd
+      if (import.meta?.env?.MODE !== 'production') {
+        try {
+          console.debug('[CurrentRoutes] route', {
+            id: r.id,
+            name: r.name || r.title || 'Route',
+            routeStart: formatDateTime(routeStart),
+            routeEnd: formatDateTime(routeEnd),
+            now: formatDateTime(now),
+            inWindow
+          })
+        } catch {}
+      }
+      return inWindow
     })
+
+    if (import.meta?.env?.MODE !== 'production') {
+      try {
+        console.debug(`[CurrentRoutes] selected ${current.length} of ${enriched.length}`)
+      } catch {}
+    }
 
     const upcoming = enriched
       .filter(r => r.scheduledAtParsed && r.scheduledAtParsed > now)
