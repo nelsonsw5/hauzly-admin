@@ -28,6 +28,7 @@ function App() {
           {user ? (
             <>
               <Link to="/dashboard" className="login-tab">Dashboard</Link>
+              <Link to="/returns" className="login-tab">Returns</Link>
               <button
                 className="login-tab"
                 onClick={async () => {

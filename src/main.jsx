@@ -10,6 +10,7 @@ import Login from './Login.jsx'
 import SignUp from './SignUp.jsx'
 import Dashboard from './Dashboard.jsx'
 import { AuthProvider, ProtectedRoute } from './AuthContext.jsx'
+import Returns from './Returns.jsx'
 
 const router = createBrowserRouter([
   {
@@ -24,6 +25,11 @@ const router = createBrowserRouter([
       { path: 'dashboard', element: (
         <ProtectedRoute>
           <Dashboard />
+        </ProtectedRoute>
+      ) },
+      { path: 'returns', element: (
+        <ProtectedRoute>
+          <Returns />
         </ProtectedRoute>
       ) },
     ],

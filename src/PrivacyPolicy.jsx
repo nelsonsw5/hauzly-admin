@@ -22,6 +22,13 @@ function PrivacyPolicy() {
           <p style={{ marginBottom: '1rem' }}>
             We do not sell your personal information. We may share information with service providers who assist in operating our services, subject to appropriate safeguards.
           </p>
+          <h3>SMS Opt-In Data</h3>
+          <p style={{ marginBottom: '1rem' }}>
+            All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties.
+          </p>
+          <p style={{ marginBottom: '1rem' }}>
+            We will not share your opt-in to an SMS campaign with any third party for purposes unrelated to providing you with the services of that campaign. We may share your Personal Data, including your SMS opt-in or consent status, with third parties that help us provide our messaging services, including but not limited to platform providers, phone companies, and any other vendors who assist us in the delivery of text messages.
+          </p>
           <h3>Data Security</h3>
           <p style={{ marginBottom: '1rem' }}>
             We implement reasonable security measures to protect your data. No method of transmission or storage is 100% secure, and we cannot guarantee absolute security.
