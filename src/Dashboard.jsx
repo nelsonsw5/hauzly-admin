@@ -161,9 +161,23 @@ function RouteTile({ route, onClick }) {
         </div>
         <div style={{ color: 'var(--accent-color)', fontSize: '0.85rem' }}>Route: {formatTimeRange(times.routeStart, times.routeEnd)}</div>
       </div>
-      <span style={{ backgroundColor: statusPillColor(status), color: 'white', padding: '0.25rem 0.6rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 600 }}>
-        {status}
-      </span>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+        <div style={{ 
+          color: 'var(--accent-color)', 
+          fontSize: '0.75rem',
+          backgroundColor: 'rgba(0, 47, 71, 0.05)',
+          padding: '0.3rem 0.5rem',
+          borderRadius: '4px',
+          border: '1px solid rgba(0, 47, 71, 0.1)',
+          fontFamily: 'monospace',
+          fontWeight: 600
+        }}>
+          Route ID: {route.id ? route.id.slice(-4) : '—'}
+        </div>
+        <span style={{ backgroundColor: statusPillColor(status), color: 'white', padding: '0.25rem 0.6rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 600 }}>
+          {status}
+        </span>
+      </div>
     </li>
   )
 }
@@ -185,9 +199,23 @@ function PickupTile({ pickup, onClick, itemsMap }) {
             Window: {formatTimeRange(toDateMaybe(pickup.scheduledWindowStart || pickup.windowStart || pickup.pickupWindowStart || pickup.window_start || pickup.window?.start), toDateMaybe(pickup.scheduledWindowEnd || pickup.windowEnd || pickup.pickupWindowEnd || pickup.window_end || pickup.window?.end))}{toDateMaybe(pickup.pickedUpAt || pickup.pickupTime || pickup.collectedAt) ? ` • Picked up: ${formatTime(toDateMaybe(pickup.pickedUpAt || pickup.pickupTime || pickup.collectedAt))}` : ''}
           </div>
         </div>
-        <span style={{ backgroundColor: statusPillColor(status), color: 'white', padding: '0.25rem 0.6rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 600 }}>
-          {status}
-        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+          <div style={{ 
+            color: 'var(--accent-color)', 
+            fontSize: '0.75rem',
+            backgroundColor: 'rgba(0, 47, 71, 0.05)',
+            padding: '0.3rem 0.5rem',
+            borderRadius: '4px',
+            border: '1px solid rgba(0, 47, 71, 0.1)',
+            fontFamily: 'monospace',
+            fontWeight: 600
+          }}>
+            Pickup ID: {pickup.id ? pickup.id.slice(-4) : '—'}
+          </div>
+          <span style={{ backgroundColor: statusPillColor(status), color: 'white', padding: '0.25rem 0.6rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 600 }}>
+            {status}
+          </span>
+        </div>
       </div>
       {pickup.items?.length ? (
         <div style={{ padding: '0.75rem 1rem' }}>
@@ -216,7 +244,7 @@ function PickupTile({ pickup, onClick, itemsMap }) {
                       <div style={{ width: '40px', height: '40px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0 }}>
                         <img 
                           src={item.photo?.url || item.driverPhoto?.url} 
-                          alt={item.name || item.description || 'Item'} 
+                          alt={item.name || 'Item'} 
                           style={{ 
                             width: '100%', 
                             height: '100%', 
@@ -229,11 +257,28 @@ function PickupTile({ pickup, onClick, itemsMap }) {
                         />
                       </div>
                     )}
-                    <div>
-                      <div style={{ fontWeight: 500 }}>{item.name || item.description || `Item ${item.id}`}</div>
-                      <div style={{ color: 'var(--accent-color)', fontSize: '0.85rem' }}>
-                        {item.size ? `${item.size}` : ''}{item.notes ? ` • ${item.notes}` : ''}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 500 }}>{item.name}</div>
+                      {item.description && (
+                        <div style={{ color: 'var(--accent-color)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                          <strong>Description:</strong> {item.description}
+                        </div>
+                      )}
+                      <div style={{ color: 'var(--accent-color)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                        {item.size ? `Item Size: ${item.size} cubic ft` : ''}{item.notes ? ` • ${item.notes}` : ''}
                       </div>
+                    </div>
+                    <div style={{ 
+                      color: 'var(--accent-color)', 
+                      fontSize: '0.75rem',
+                      backgroundColor: 'rgba(0, 47, 71, 0.05)',
+                      padding: '0.3rem 0.5rem',
+                      borderRadius: '4px',
+                      border: '1px solid rgba(0, 47, 71, 0.1)',
+                      fontFamily: 'monospace',
+                      fontWeight: 600
+                    }}>
+                      Item ID: {item.id ? item.id.slice(-4) : '—'}
                     </div>
                   </div>
                   {item.status && (
@@ -277,7 +322,12 @@ function ItemTile({ item, onClick }) {
         )}
         
         <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 600 }}>{item.name || item.description || `Item ${item.id}`}</div>
+          <div style={{ fontWeight: 600 }}>{item.name}</div>
+          {item.description && (
+            <div style={{ color: 'var(--accent-color)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+              <strong>Description:</strong> {item.description}
+            </div>
+          )}
           <div style={{ color: 'var(--accent-color)', fontSize: '0.9rem' }}>
             Pickup: {item.pickupReference} • {formatDateTime(item.pickupScheduled)}
           </div>
@@ -285,15 +335,30 @@ function ItemTile({ item, onClick }) {
             {item.pickupAddress}
           </div>
           <div style={{ color: 'var(--accent-color)', fontSize: '0.8rem' }}>
-            {item.size ? `${item.size}` : ''}{item.notes ? ` • ${item.notes}` : ''}
+            {item.size ? `Item Size: ${item.size} cubic ft` : ''}{item.notes ? ` • ${item.notes}` : ''}
           </div>
         </div>
+        
       </div>
       
       {item.status && (
-        <span style={{ backgroundColor: statusPillColor(item.status), color: 'white', padding: '0.25rem 0.6rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 600 }}>
-          {item.status}
-        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+          <div style={{ 
+            color: 'var(--accent-color)', 
+            fontSize: '0.75rem',
+            backgroundColor: 'rgba(0, 47, 71, 0.05)',
+            padding: '0.3rem 0.5rem',
+            borderRadius: '4px',
+            border: '1px solid rgba(0, 47, 71, 0.1)',
+            fontFamily: 'monospace',
+            fontWeight: 600
+          }}>
+            Item ID: {item.id ? item.id.slice(-4) : '—'}
+          </div>
+          <span style={{ backgroundColor: statusPillColor(item.status), color: 'white', padding: '0.25rem 0.6rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 600 }}>
+            {item.status}
+          </span>
+        </div>
       )}
     </li>
   )
@@ -323,6 +388,7 @@ function Dashboard() {
   const [selectedType, setSelectedType] = useState(null) // 'route' | 'pickup' | 'item'
   const [modalView, setModalView] = useState('main') // 'main' | 'pickups' | 'items'
   const [parentItem, setParentItem] = useState(null) // For navigation context
+  const [routeContext, setRouteContext] = useState(null) // Store the original route when navigating to items
 
   // Create pickup lookup map for efficient access
   const pickupMap = useMemo(() => {
@@ -339,25 +405,35 @@ function Dashboard() {
     setSelectedType(null)
     setModalView('main')
     setParentItem(null)
+    setRouteContext(null)
   }
 
   const navigateToPickups = (route) => {
     setParentItem(route)
+    setRouteContext(route) // Store the route context
     setModalView('pickups')
   }
 
   const navigateToItems = (pickup) => {
     setParentItem(pickup)
     setModalView('items')
+    // Keep the routeContext as is - it should already be set from navigateToPickups
   }
 
   const navigateBack = () => {
     if (modalView === 'items') {
+      // Go back from items to pickups view
       setModalView('pickups')
-      setParentItem(selectedItem) // The route that contains this pickup
+      setSelectedItem(routeContext) // Go back to the route
+      setParentItem(routeContext) // Set parent back to route
+      setSelectedType('route')
     } else if (modalView === 'pickups') {
+      // Go back from pickups to main view
       setModalView('main')
+      setSelectedItem(null)
       setParentItem(null)
+      setRouteContext(null)
+      setSelectedType(null)
     }
   }
 
@@ -703,41 +779,43 @@ function Dashboard() {
         <section style={{ marginTop: '1rem' }}>
           <h2 style={{ color: 'var(--secondary-color)', marginBottom: '1rem' }}>Lookup</h2>
           <div style={{ backgroundColor: 'white', padding: '1rem', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.08)' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <div className="dashboard-lookup-form" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '120px', flex: '1 1 120px' }}>
                 <label htmlFor="lookup-type" style={{ color: 'var(--accent-color)', fontSize: '0.85rem' }}>Type</label>
-                <select id="lookup-type" value={lookupType} onChange={(e) => setLookupType(e.target.value)} style={{ padding: '0.5rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
+                <select id="lookup-type" value={lookupType} onChange={(e) => setLookupType(e.target.value)} style={{ padding: '0.75rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '1rem', minHeight: '44px' }}>
                   <option value="route">Route</option>
                   <option value="pickup">Pickup</option>
                   <option value="item">Item</option>
                 </select>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '240px', flex: '1 1 260px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '200px', flex: '1 1 300px' }}>
                 <label htmlFor="lookup-address" style={{ color: 'var(--accent-color)', fontSize: '0.85rem' }}>Address or keyword</label>
-                <input id="lookup-address" type="text" value={lookupAddress} onChange={(e) => setLookupAddress(e.target.value)} placeholder={lookupType === 'pickup' ? '123 Main St, Austin…' : lookupType === 'item' ? 'Item name, description, notes…' : 'Route name, driver, address…'} style={{ padding: '0.5rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px' }} />
+                <input id="lookup-address" type="text" value={lookupAddress} onChange={(e) => setLookupAddress(e.target.value)} placeholder={lookupType === 'pickup' ? '123 Main St, Austin…' : lookupType === 'item' ? 'Item name, description, notes…' : 'Route name, driver, address…'} style={{ padding: '0.75rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '1rem', minHeight: '44px' }} />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '140px', flex: '1 1 140px' }}>
                 <label htmlFor="lookup-day" style={{ color: 'var(--accent-color)', fontSize: '0.85rem' }}>Day</label>
-                <input id="lookup-day" type="date" value={lookupDay} onChange={(e) => setLookupDay(e.target.value)} style={{ padding: '0.5rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px' }} />
+                <input id="lookup-day" type="date" value={lookupDay} onChange={(e) => setLookupDay(e.target.value)} style={{ padding: '0.75rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '1rem', minHeight: '44px' }} />
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: 'auto' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label htmlFor="lookup-sort" style={{ color: 'var(--accent-color)', fontSize: '0.85rem' }}>Sort</label>
-                  <select id="lookup-sort" value={lookupSort} onChange={(e) => setLookupSort(e.target.value)} style={{ padding: '0.5rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
-                    <option value="asc">Date/time (oldest first)</option>
-                    <option value="desc">Date/time (newest first)</option>
-                  </select>
-                </div>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--accent-color)', fontSize: '0.9rem' }}>
-                  <input type="checkbox" checked={hideFuture} onChange={(e) => setHideFuture(e.target.checked)} /> Hide future
-                </label>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--accent-color)', fontSize: '0.9rem' }}>
-                  <input type="checkbox" checked={hidePast} onChange={(e) => setHidePast(e.target.checked)} /> Hide past
-                </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '180px', flex: '1 1 180px' }}>
+                <label htmlFor="lookup-sort" style={{ color: 'var(--accent-color)', fontSize: '0.85rem' }}>Sort</label>
+                <select id="lookup-sort" value={lookupSort} onChange={(e) => setLookupSort(e.target.value)} style={{ padding: '0.75rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '1rem', minHeight: '44px' }}>
+                  <option value="asc">Date/time (oldest first)</option>
+                  <option value="desc">Date/time (newest first)</option>
+                </select>
               </div>
+            </div>
+
+            {/* Mobile-friendly filter checkboxes */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '1rem', alignItems: 'center' }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-color)', fontSize: '0.9rem', minHeight: '44px' }}>
+                <input type="checkbox" checked={hideFuture} onChange={(e) => setHideFuture(e.target.checked)} style={{ transform: 'scale(1.2)' }} /> Hide future
+              </label>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-color)', fontSize: '0.9rem', minHeight: '44px' }}>
+                <input type="checkbox" checked={hidePast} onChange={(e) => setHidePast(e.target.checked)} style={{ transform: 'scale(1.2)' }} /> Hide past
+              </label>
             </div>
 
             <div style={{ marginTop: '1rem' }}>
@@ -816,8 +894,8 @@ function Dashboard() {
       </div>
       {/* Modal: item details */}
       {selectedItem && (
-        <div onClick={closeModal} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ backgroundColor: 'white', width: 'min(900px, 92vw)', maxHeight: '80vh', borderRadius: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column' }}>
+        <div onClick={closeModal} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="dashboard-modal" onClick={(e) => e.stopPropagation()} style={{ backgroundColor: 'white', width: 'min(900px, 100%)', maxHeight: '90vh', borderRadius: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', maxWidth: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.9rem 1rem', borderBottom: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 {modalView !== 'main' && (
@@ -833,7 +911,7 @@ function Dashboard() {
               </div>
               <button onClick={closeModal} style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--secondary-color)' }} aria-label="Close">×</button>
             </div>
-            <div style={{ padding: '1rem', overflow: 'auto', color: 'var(--accent-color)' }}>
+            <div className="dashboard-modal-content" style={{ padding: '1rem', overflow: 'auto', color: 'var(--accent-color)' }}>
               {modalView === 'pickups' && (() => {
                 const route = selectedItem
                 const routeStatus = (route.status || route.computedStatus || 'unknown').toString()
@@ -966,11 +1044,29 @@ function Dashboard() {
                                       />
                                     </div>
                                   )}
-                                  <div>
-                                    <div style={{ fontWeight: 600 }}>{item.name || item.description || `Item ${item.id}`}</div>
-                                    <div style={{ fontSize: '0.85rem' }}>
-                                      {item.size ? `${item.size}` : ''}{item.notes ? ` • ${item.notes}` : ''}
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: 600 }}>{item.name}</div>
+                                    {item.description && (
+                                      <div style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                                        <strong>Description:</strong> {item.description}
+                                      </div>
+                                    )}
+                                    <div style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                                      {item.size ? `Item Size: ${item.size} cubic ft` : ''}{item.notes ? ` • ${item.notes}` : ''}
                                     </div>
+                                  </div>
+                                  <div style={{ 
+                                    color: 'var(--accent-color)', 
+                                    fontSize: '0.75rem',
+                                    marginLeft: '1rem',
+                                    backgroundColor: 'rgba(0, 47, 71, 0.05)',
+                                    padding: '0.3rem 0.5rem',
+                                    borderRadius: '4px',
+                                    border: '1px solid rgba(0, 47, 71, 0.1)',
+                                    fontFamily: 'monospace',
+                                    fontWeight: 600
+                                  }}>
+                                    Item ID: {item.id ? item.id.slice(-4) : '—'}
                                   </div>
                                 </div>
                                 {item.status && (
@@ -995,19 +1091,37 @@ function Dashboard() {
                 return (
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <div>
-                        <div style={{ fontWeight: 700, color: 'var(--secondary-color)', fontSize: '1.1rem' }}>{item.name || item.description || `Item ${item.id}`}</div>
-                        <div style={{ fontSize: '0.9rem' }}>Pickup: {item.pickupReference} • {formatDateTime(item.pickupScheduled)}</div>
-                        <div style={{ fontSize: '0.85rem' }}>{item.pickupAddress}</div>
-                      </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, color: 'var(--secondary-color)', fontSize: '1.1rem' }}>{item.name}</div>
+                      {item.description && (
+                        <div style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>
+                          <strong>Description:</strong> {item.description}
+                        </div>
+                      )}
+                      <div style={{ fontSize: '0.9rem' }}>Pickup: {item.pickupReference} • {formatDateTime(item.pickupScheduled)}</div>
+                      <div style={{ fontSize: '0.85rem' }}>{item.pickupAddress}</div>
+                    </div>
+                    <div style={{ 
+                      color: 'var(--accent-color)', 
+                      fontSize: '0.75rem',
+                      marginLeft: '1rem',
+                      backgroundColor: 'rgba(0, 47, 71, 0.05)',
+                      padding: '0.4rem 0.6rem',
+                      borderRadius: '4px',
+                      border: '1px solid rgba(0, 47, 71, 0.1)',
+                      fontFamily: 'monospace',
+                      fontWeight: 600
+                    }}>
+                      Item ID: {item.id ? item.id.slice(-4) : '—'}
+                    </div>
                       {item.status && (
                         <span style={{ backgroundColor: statusPillColor(item.status), color: 'white', padding: '0.25rem 0.6rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 700 }}>{item.status}</span>
                       )}
                     </div>
                     
                     <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', columnGap: '1rem', rowGap: '0.4rem' }}>
-                      <div style={{ fontWeight: 600, color: 'var(--secondary-color)' }}>Size</div>
-                      <div>{item.size || '—'}</div>
+                      <div style={{ fontWeight: 600, color: 'var(--secondary-color)' }}>Item Size</div>
+                      <div>{item.size ? `${item.size} cubic ft` : '—'}</div>
                       <div style={{ fontWeight: 600, color: 'var(--secondary-color)' }}>Notes</div>
                       <div>{item.notes || '—'}</div>
                     </div>

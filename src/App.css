@@ -1440,22 +1440,51 @@ html {
     padding: 1rem;
     gap: 1rem;
     height: auto; /* Remove fixed height */
+    min-height: 80px;
   }
 
   .logo {
-    height: 80px; /* Much smaller for mobile */
+    height: 60px; /* Smaller for mobile */
+    max-width: 200px;
   }
 
   .nav-menu {
     flex-direction: row; /* Keep horizontal but adjust */
     justify-content: center;
-    gap: 1rem;
+    gap: 0.75rem;
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .download-btn, .login-tab {
     padding: 0.5rem 1rem;
     font-size: 0.9rem;
+    min-height: 44px; /* Better touch targets */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .logo {
+    height: 50px;
+  }
+
+  .nav-menu {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .download-btn, .login-tab {
+    width: 100%;
+    padding: 0.75rem 1rem;
   }
 }
 
@@ -1949,4 +1978,231 @@ html {
 
 .main-content {
   flex: 1;
+}
+
+/* Enhanced Mobile Responsiveness */
+
+/* Dashboard specific mobile improvements */
+@media (max-width: 768px) {
+  /* Dashboard lookup form improvements */
+  .dashboard-lookup-form {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+
+  .dashboard-lookup-form > div {
+    width: 100% !important;
+    min-width: auto !important;
+    flex: none !important;
+  }
+
+  /* Dashboard modal improvements */
+  .dashboard-modal {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: 0.5rem !important;
+  }
+
+  .dashboard-modal-content {
+    padding: 0.75rem !important;
+  }
+
+  /* Dashboard item cards mobile layout */
+  .dashboard-item-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+
+  .dashboard-item-actions {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+  }
+
+  .dashboard-item-actions button {
+    flex: 1 1 auto !important;
+    min-width: 120px !important;
+  }
+}
+
+/* Returns component mobile improvements */
+@media (max-width: 768px) {
+  .returns-search-form {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+
+  .returns-search-form > * {
+    width: 100% !important;
+    min-width: auto !important;
+  }
+
+  .returns-item-card {
+    flex-direction: column !important;
+  }
+
+  .returns-item-actions {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+  }
+
+  .returns-item-actions button {
+    flex: 1 1 auto !important;
+    min-width: 120px !important;
+  }
+}
+
+/* Form improvements for mobile */
+@media (max-width: 768px) {
+  .form-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 1rem !important;
+    padding: 1.5rem !important;
+  }
+
+  .form-input {
+    width: 100% !important;
+    padding: 1rem !important;
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    min-height: 44px !important;
+  }
+
+  .form-button {
+    width: 100% !important;
+    padding: 1rem !important;
+    font-size: 1rem !important;
+    min-height: 44px !important;
+  }
+}
+
+/* Table and list improvements for mobile */
+@media (max-width: 768px) {
+  .responsive-table {
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  .responsive-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  .responsive-list-item {
+    width: 100% !important;
+    padding: 1rem !important;
+  }
+}
+
+/* Image responsiveness */
+@media (max-width: 768px) {
+  .responsive-image {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100% !important;
+  }
+
+  .scenario-card img {
+    width: 100% !important;
+    max-width: 250px !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    display: block !important;
+  }
+}
+
+/* Typography improvements for mobile */
+@media (max-width: 768px) {
+  .mobile-text-sm {
+    font-size: 0.875rem !important;
+    line-height: 1.5 !important;
+  }
+
+  .mobile-text-base {
+    font-size: 1rem !important;
+    line-height: 1.6 !important;
+  }
+
+  .mobile-text-lg {
+    font-size: 1.125rem !important;
+    line-height: 1.6 !important;
+  }
+
+  .mobile-text-xl {
+    font-size: 1.25rem !important;
+    line-height: 1.5 !important;
+  }
+}
+
+/* Touch target improvements */
+@media (max-width: 768px) {
+  button, 
+  input[type="button"], 
+  input[type="submit"], 
+  select, 
+  a {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+
+  .touch-target {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}
+
+/* Landscape orientation improvements */
+@media (max-width: 768px) and (orientation: landscape) {
+  .header {
+    flex-direction: row !important;
+    padding: 0.5rem 1rem !important;
+    height: 60px !important;
+  }
+
+  .logo {
+    height: 40px !important;
+  }
+
+  .nav-menu {
+    flex-direction: row !important;
+    gap: 0.5rem !important;
+  }
+
+  .hero-section {
+    padding: 2rem 1rem !important;
+  }
+
+  .hero-section h1 {
+    font-size: 2rem !important;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 320px) {
+  .main-content {
+    padding: 0.5rem !important;
+  }
+
+  .hero-section {
+    padding: 2rem 0.5rem !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  .scenario-card {
+    padding: 1rem !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  .feature-card {
+    padding: 1rem !important;
+  }
 }

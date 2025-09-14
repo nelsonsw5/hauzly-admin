@@ -64,7 +64,7 @@ function LandingPage() {
 
       {/* Scenarios Section - Horizontal Grid with Wide Card Spacing */}
       <section style={{ padding: '4rem 0' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '4rem', maxWidth: '1600px', margin: '0 auto' }}>
+        <div className="responsive-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '4rem', maxWidth: '1600px', margin: '0 auto' }}>
           
           <div className="scenario-card" style={{ 
             textAlign: 'center',
@@ -75,6 +75,7 @@ function LandingPage() {
               <img 
                 src={tantrumMomImage} 
                 alt="Mom with screaming kids waiting in line with packages" 
+                className="responsive-image"
                 style={{ 
                   width: '250px',
                   height: 'auto',
@@ -114,6 +115,7 @@ function LandingPage() {
               <img 
                 src={stacksCrazyImage} 
                 alt="Crazy stacks of packages piled up at the door" 
+                className="responsive-image"
                 style={{ 
                   width: '250px',
                   height: 'auto',
@@ -153,6 +155,7 @@ function LandingPage() {
               <img 
                 src={happyPickupImage} 
                 alt="Happy customer with smooth package pickup experience" 
+                className="responsive-image"
                 style={{ 
                   width: '250px',
                   height: 'auto',

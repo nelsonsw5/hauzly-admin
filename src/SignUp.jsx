@@ -36,7 +36,7 @@ function SignUp() {
 
   return (
     <main className="main-content">
-      <section className="hero-section" style={{ maxWidth: '400px', margin: '2rem auto' }}>
+      <section className="hero-section form-container" style={{ maxWidth: '400px', margin: '2rem auto' }}>
         <h1>Sign Up</h1>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '2rem' }}>
           <input 
@@ -44,6 +44,7 @@ function SignUp() {
             placeholder="Full Name" 
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
+            className="form-input"
             style={{ 
               padding: '1rem', 
               border: '1px solid #ddd', 
@@ -56,6 +57,7 @@ function SignUp() {
             placeholder="Email" 
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className="form-input"
             style={{ 
               padding: '1rem', 
               border: '1px solid #ddd', 
@@ -68,6 +70,7 @@ function SignUp() {
             placeholder="Password" 
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            className="form-input"
             style={{ 
               padding: '1rem', 
               border: '1px solid #ddd', 
@@ -80,6 +83,7 @@ function SignUp() {
             placeholder="Confirm Password" 
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
+            className="form-input"
             style={{ 
               padding: '1rem', 
               border: '1px solid #ddd', 
@@ -93,6 +97,7 @@ function SignUp() {
           <button 
             type="submit" 
             disabled={submitting}
+            className="form-button"
             style={{ 
               padding: '1rem', 
               backgroundColor: 'var(--primary-color)', 
