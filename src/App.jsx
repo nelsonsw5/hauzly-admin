@@ -7,7 +7,7 @@ import { useAuth } from './AuthContext'
 function App() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, logout } = useAuth()
+  const { user, isAdmin, logout } = useAuth()
   useEffect(() => {
     // Scroll to top when component mounts
     window.scrollTo(0, 0)
@@ -23,24 +23,42 @@ function App() {
         </div>
         <nav className="nav-menu">
           {location.pathname === '/' && (
-            <button className="download-btn">Download</button>
+            <button className="download-btn" style={{ minHeight: '44px', minWidth: '44px' }}>Download</button>
+          )}
+          {location.pathname === '/' && (
+            <button 
+              className="login-tab" 
+              onClick={() => {
+                const pricingSection = document.getElementById('pricing')
+                if (pricingSection) {
+                  pricingSection.scrollIntoView({ behavior: 'smooth' })
+                }
+              }}
+              style={{ minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              Pricing
+            </button>
           )}
           {user ? (
             <>
-              <Link to="/dashboard" className="login-tab">Dashboard</Link>
-              <Link to="/returns" className="login-tab">Returns</Link>
+              <Link to="/dashboard" className="login-tab" style={{ minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Dashboard</Link>
+              <Link to="/returns" className="login-tab" style={{ minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Returns</Link>
+              {isAdmin && (
+                <Link to="/users" className="login-tab" style={{ minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Users</Link>
+              )}
               <button
                 className="login-tab"
                 onClick={async () => {
                   await logout()
                   navigate('/')
                 }}
+                style={{ minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >Logout</button>
             </>
           ) : (
             <>
-              <Link to="/login" className="login-tab">Login</Link>
-              <Link to="/signup" className="login-tab">Sign Up</Link>
+              <Link to="/login" className="login-tab" style={{ minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Login</Link>
+              <Link to="/signup" className="login-tab" style={{ minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Sign Up</Link>
             </>
           )}
         </nav>

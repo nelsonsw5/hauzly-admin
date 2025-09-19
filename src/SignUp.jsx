@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
-import { auth } from './firebase'
+import { doc, setDoc } from 'firebase/firestore'
+import { auth, db } from './firebase'
 import './App.css'
 
 function SignUp() {
@@ -26,6 +27,17 @@ function SignUp() {
       if (fullName) {
         await updateProfile(cred.user, { displayName: fullName })
       }
+      
+      // Create user document in Firestore
+      await setDoc(doc(db, 'users', cred.user.uid), {
+        uid: cred.user.uid,
+        email: cred.user.email,
+        displayName: fullName || cred.user.displayName || '',
+        role: 'user', // Default role
+        createdAt: new Date(),
+        lastLoginAt: new Date()
+      })
+      
       navigate('/dashboard')
     } catch (err) {
       setError(err.message || 'Sign up failed')
@@ -49,7 +61,9 @@ function SignUp() {
               padding: '1rem', 
               border: '1px solid #ddd', 
               borderRadius: '4px',
-              fontSize: '1rem'
+              fontSize: '1rem',
+              minHeight: '44px',
+              width: '100%'
             }} 
           />
           <input 
@@ -62,7 +76,9 @@ function SignUp() {
               padding: '1rem', 
               border: '1px solid #ddd', 
               borderRadius: '4px',
-              fontSize: '1rem'
+              fontSize: '1rem',
+              minHeight: '44px',
+              width: '100%'
             }} 
           />
           <input 
@@ -75,7 +91,9 @@ function SignUp() {
               padding: '1rem', 
               border: '1px solid #ddd', 
               borderRadius: '4px',
-              fontSize: '1rem'
+              fontSize: '1rem',
+              minHeight: '44px',
+              width: '100%'
             }} 
           />
           <input 
@@ -88,7 +106,9 @@ function SignUp() {
               padding: '1rem', 
               border: '1px solid #ddd', 
               borderRadius: '4px',
-              fontSize: '1rem'
+              fontSize: '1rem',
+              minHeight: '44px',
+              width: '100%'
             }} 
           />
           {error && (
@@ -106,7 +126,9 @@ function SignUp() {
               borderRadius: '4px',
               fontSize: '1rem',
               cursor: 'pointer',
-              opacity: submitting ? 0.7 : 1
+              opacity: submitting ? 0.7 : 1,
+              minHeight: '44px',
+              width: '100%'
             }}
           >
             {submitting ? 'Creating account...' : 'Sign Up'}

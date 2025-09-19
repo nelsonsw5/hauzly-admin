@@ -237,37 +237,49 @@ function PickupTile({ pickup, onClick, itemsMap }) {
               }
 
               return (
-                <li key={item.id || itemId || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', border: '1px dashed var(--border-color)', borderRadius: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {/* Item Image */}
-                    {(item.photo?.url || item.driverPhoto?.url) && (
-                      <div style={{ width: '40px', height: '40px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0 }}>
-                        <img 
-                          src={item.photo?.url || item.driverPhoto?.url} 
-                          alt={item.name || 'Item'} 
-                          style={{ 
-                            width: '100%', 
-                            height: '100%', 
-                            objectFit: 'cover',
-                            backgroundColor: '#f5f5f5'
-                          }}
-                          onError={(e) => {
-                            e.target.style.display = 'none'
-                          }}
-                        />
+                <li key={item.id || itemId || idx} style={{ padding: '1rem', border: '1px dashed var(--border-color)', borderRadius: '8px' }}>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <div style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--secondary-color)' }}>
+                      {item.name}
+                    </div>
+                    {item.description && (
+                      <div style={{ color: 'var(--accent-color)', marginBottom: '0.5rem' }}>
+                        <strong>Description:</strong> {item.description}
                       </div>
                     )}
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 500 }}>{item.name}</div>
-                      {item.description && (
-                        <div style={{ color: 'var(--accent-color)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                          <strong>Description:</strong> {item.description}
+                    
+                    {/* Photo - Bigger like in Returns */}
+                    {(item.photo?.url || item.driverPhoto?.url) && (
+                      <div style={{ marginBottom: '1rem' }}>
+                        <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--secondary-color)' }}>Photo:</div>
+                        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                          <div style={{ position: 'relative' }}>
+                            <img 
+                              src={item.photo?.url || item.driverPhoto?.url} 
+                              alt={item.name || 'Item'} 
+                              style={{ 
+                                width: '120px', 
+                                height: '120px', 
+                                objectFit: 'cover', 
+                                borderRadius: '12px', 
+                                border: '1px solid var(--border-color)' 
+                              }}
+                              onError={(e) => {
+                                e.target.style.display = 'none'
+                              }}
+                            />
+                          </div>
                         </div>
-                      )}
-                      <div style={{ color: 'var(--accent-color)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                        {item.size ? `Item Size: ${item.size} cubic ft` : ''}{item.notes ? ` • ${item.notes}` : ''}
                       </div>
+                    )}
+                    
+                    <div style={{ color: 'var(--accent-color)', fontSize: '0.9rem' }}>
+                      {item.size && <div>Size: {item.size} cubic ft</div>}
+                      {item.notes && <div>Notes: {item.notes}</div>}
                     </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <div style={{ 
                       color: 'var(--accent-color)', 
                       fontSize: '0.75rem',
@@ -280,12 +292,12 @@ function PickupTile({ pickup, onClick, itemsMap }) {
                     }}>
                       Item ID: {item.id ? item.id.slice(-4) : '—'}
                     </div>
+                    {item.status && (
+                      <span style={{ backgroundColor: statusPillColor(item.status), color: 'white', padding: '0.25rem 0.6rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 700 }}>
+                        {item.status}
+                      </span>
+                    )}
                   </div>
-                  {item.status && (
-                    <span style={{ backgroundColor: statusPillColor(item.status), color: 'white', padding: '0.2rem 0.5rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600 }}>
-                      {item.status}
-                    </span>
-                  )}
                 </li>
               )
             })}
@@ -300,49 +312,54 @@ function PickupTile({ pickup, onClick, itemsMap }) {
 
 function ItemTile({ item, onClick }) {
   return (
-    <li onClick={onClick} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1 }}>
-        {/* Item Image */}
-        {(item.photo?.url || item.driverPhoto?.url) && (
-          <div style={{ width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
-            <img 
-              src={item.photo?.url || item.driverPhoto?.url} 
-              alt={item.name || item.description || 'Item'} 
-              style={{ 
-                width: '100%', 
-                height: '100%', 
-                objectFit: 'cover',
-                backgroundColor: '#f5f5f5'
-              }}
-              onError={(e) => {
-                e.target.style.display = 'none'
-              }}
-            />
+    <li onClick={onClick} style={{ border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer' }}>
+      <div style={{ padding: '1.5rem' }}>
+        <div style={{ marginBottom: '1rem' }}>
+          <div style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--secondary-color)' }}>
+            {item.name}
           </div>
-        )}
-        
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 600 }}>{item.name}</div>
           {item.description && (
-            <div style={{ color: 'var(--accent-color)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+            <div style={{ color: 'var(--accent-color)', marginBottom: '0.5rem' }}>
               <strong>Description:</strong> {item.description}
             </div>
           )}
+          
+          {/* Photo - Bigger like in Returns */}
+          {(item.photo?.url || item.driverPhoto?.url) && (
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--secondary-color)' }}>Photo:</div>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <div style={{ position: 'relative' }}>
+                  <img 
+                    src={item.photo?.url || item.driverPhoto?.url} 
+                    alt={item.name || item.description || 'Item'} 
+                    style={{ 
+                      width: '120px', 
+                      height: '120px', 
+                      objectFit: 'cover', 
+                      borderRadius: '12px', 
+                      border: '1px solid var(--border-color)' 
+                    }}
+                    onError={(e) => {
+                      e.target.style.display = 'none'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div style={{ color: 'var(--accent-color)', fontSize: '0.9rem' }}>
-            Pickup: {item.pickupReference} • {formatDateTime(item.pickupScheduled)}
-          </div>
-          <div style={{ color: 'var(--accent-color)', fontSize: '0.85rem' }}>
-            {item.pickupAddress}
-          </div>
-          <div style={{ color: 'var(--accent-color)', fontSize: '0.8rem' }}>
-            {item.size ? `Item Size: ${item.size} cubic ft` : ''}{item.notes ? ` • ${item.notes}` : ''}
+            <div>Pickup: {item.pickupId || '—'}</div>
+            <div>Address: {item.pickupAddress || '—'}</div>
+            {item.pickupScheduled && <div>Scheduled: {formatDateTime(item.pickupScheduled)}</div>}
+            {/* {item.pickupId && <div>Pickup ID: {item.pickupId.slice(-4)}</div>} */}
+            {item.size && <div>Size: {item.size} cubic ft</div>}
+            {item.notes && <div>Notes: {item.notes}</div>}
           </div>
         </div>
-        
-      </div>
-      
-      {item.status && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div style={{ 
             color: 'var(--accent-color)', 
             fontSize: '0.75rem',
@@ -355,11 +372,13 @@ function ItemTile({ item, onClick }) {
           }}>
             Item ID: {item.id ? item.id.slice(-4) : '—'}
           </div>
-          <span style={{ backgroundColor: statusPillColor(item.status), color: 'white', padding: '0.25rem 0.6rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 600 }}>
-            {item.status}
-          </span>
+          {item.status && (
+            <span style={{ backgroundColor: statusPillColor(item.status), color: 'white', padding: '0.25rem 0.6rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 700 }}>
+              {item.status}
+            </span>
+          )}
         </div>
-      )}
+      </div>
     </li>
   )
 }
@@ -382,6 +401,7 @@ function Dashboard() {
   const [hideFuture, setHideFuture] = useState(false)
   const [hidePast, setHidePast] = useState(false)
   const [lookupSort, setLookupSort] = useState('asc') // asc | desc
+  const [lookupStatus, setLookupStatus] = useState('') // Status filter
 
   // Modal selection state
   const [selectedItem, setSelectedItem] = useState(null)
@@ -641,7 +661,8 @@ function Dashboard() {
               textMatches(p.name)
             )
           : true
-        if (!(dayOk && textOk)) return false
+        const statusOk = !lookupStatus || (p.status || '').toString().toLowerCase() === lookupStatus.toLowerCase()
+        if (!(dayOk && textOk && statusOk)) return false
         const cls = classifyPickupTime(p)
         if (hideFuture && cls === 'future') return false
         if (hidePast && cls === 'past') return false
@@ -660,14 +681,20 @@ function Dashboard() {
       const allItems = []
       pickups.forEach(pickup => {
         if (Array.isArray(pickup.items)) {
-          pickup.items.forEach(item => {
-            allItems.push({
-              ...item,
-              pickupId: pickup.id,
-              pickupReference: pickup.reference || pickup.customerName || pickup.name,
-              pickupAddress: formatPickupAddress(pickup),
-              pickupScheduled: toDateMaybe(pickup.scheduledAt || pickup.date)
-            })
+          pickup.items.forEach(itemRef => {
+            // Handle both string IDs and objects with itemId property
+            const itemId = typeof itemRef === 'string' ? itemRef : itemRef.itemId || itemRef.id
+            const item = itemsMap[itemId]
+            
+            if (item) {
+              allItems.push({
+                ...item,
+                pickupId: pickup.id,
+                pickupReference: pickup.reference || pickup.customerName || pickup.name,
+                pickupAddress: formatPickupAddress(pickup),
+                pickupScheduled: toDateMaybe(pickup.scheduledAt || pickup.date)
+              })
+            }
           })
         }
       })
@@ -683,7 +710,8 @@ function Dashboard() {
               textMatches(item.notes)
             )
           : true
-        if (!(dayOk && textOk)) return false
+        const statusOk = !lookupStatus || (item.status || '').toString().toLowerCase() === lookupStatus.toLowerCase()
+        if (!(dayOk && textOk && statusOk)) return false
         const cls = classifyPickupTime({ scheduledAt: item.pickupScheduled })
         if (hideFuture && cls === 'future') return false
         if (hidePast && cls === 'past') return false
@@ -710,7 +738,8 @@ function Dashboard() {
             (Array.isArray(r.pickups) && r.pickups.some(p => textMatches(formatPickupAddress(p)) || textMatches(p?.reference) || textMatches(p?.customerName)))
           )
         : true
-      if (!(dayOk && textOk)) return false
+      const statusOk = !lookupStatus || (r.status || r.computedStatus || '').toString().toLowerCase() === lookupStatus.toLowerCase()
+      if (!(dayOk && textOk && statusOk)) return false
       const cls = classifyRouteTime(r)
       if (hideFuture && cls === 'future') return false
       if (hidePast && cls === 'past') return false
@@ -727,7 +756,7 @@ function Dashboard() {
     }))
     withKey.sort((a, b) => lookupSort === 'asc' ? a._key - b._key : b._key - a._key)
     return { type: 'route', items: withKey.map(x => x.v) }
-  }, [lookupType, lookupAddress, lookupDay, lookupSort, hideFuture, hidePast, routes, pickups])
+  }, [lookupType, lookupAddress, lookupDay, lookupSort, hideFuture, hidePast, lookupStatus, routes, pickups])
 
   // Close modal on Escape
   useEffect(() => {
@@ -782,7 +811,7 @@ function Dashboard() {
             <div className="dashboard-lookup-form" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-start' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '120px', flex: '1 1 120px' }}>
                 <label htmlFor="lookup-type" style={{ color: 'var(--accent-color)', fontSize: '0.85rem' }}>Type</label>
-                <select id="lookup-type" value={lookupType} onChange={(e) => setLookupType(e.target.value)} style={{ padding: '0.75rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '1rem', minHeight: '44px' }}>
+                <select id="lookup-type" value={lookupType} onChange={(e) => setLookupType(e.target.value)} style={{ padding: '0.75rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '1rem', minHeight: '44px', width: '100%' }}>
                   <option value="route">Route</option>
                   <option value="pickup">Pickup</option>
                   <option value="item">Item</option>
@@ -791,17 +820,47 @@ function Dashboard() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '200px', flex: '1 1 300px' }}>
                 <label htmlFor="lookup-address" style={{ color: 'var(--accent-color)', fontSize: '0.85rem' }}>Address or keyword</label>
-                <input id="lookup-address" type="text" value={lookupAddress} onChange={(e) => setLookupAddress(e.target.value)} placeholder={lookupType === 'pickup' ? '123 Main St, Austin…' : lookupType === 'item' ? 'Item name, description, notes…' : 'Route name, driver, address…'} style={{ padding: '0.75rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '1rem', minHeight: '44px' }} />
+                <input id="lookup-address" type="text" value={lookupAddress} onChange={(e) => setLookupAddress(e.target.value)} placeholder={lookupType === 'pickup' ? '123 Main St, Austin…' : lookupType === 'item' ? 'Item name, description, notes…' : 'Route name, driver, address…'} style={{ padding: '0.75rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '1rem', minHeight: '44px', width: '100%' }} />
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '140px', flex: '1 1 140px' }}>
                 <label htmlFor="lookup-day" style={{ color: 'var(--accent-color)', fontSize: '0.85rem' }}>Day</label>
-                <input id="lookup-day" type="date" value={lookupDay} onChange={(e) => setLookupDay(e.target.value)} style={{ padding: '0.75rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '1rem', minHeight: '44px' }} />
+                <input id="lookup-day" type="date" value={lookupDay} onChange={(e) => setLookupDay(e.target.value)} style={{ padding: '0.75rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '1rem', minHeight: '44px', width: '100%' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '140px', flex: '1 1 140px' }}>
+                <label htmlFor="lookup-status" style={{ color: 'var(--accent-color)', fontSize: '0.85rem' }}>Status</label>
+                <select id="lookup-status" value={lookupStatus} onChange={(e) => setLookupStatus(e.target.value)} style={{ padding: '0.75rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '1rem', minHeight: '44px', width: '100%' }}>
+                  <option value="">All statuses</option>
+                  {lookupType === 'route' && (
+                    <>
+                      <option value="scheduled">Scheduled</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                    </>
+                  )}
+                  {lookupType === 'pickup' && (
+                    <>
+                      <option value="completed">Completed</option>
+                      <option value="scheduled">Scheduled</option>
+                      <option value="cancelled">Cancelled</option>
+                    </>
+                  )}
+                  {lookupType === 'item' && (
+                    <>
+                      <option value="scheduled">Scheduled</option>
+                      <option value="cancelled">Cancelled</option>
+                      <option value="hauled off">Hauled Off</option>
+                      <option value="scanned">Scanned</option>
+                      <option value="rejected">Rejected</option>
+                    </>
+                  )}
+                </select>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '180px', flex: '1 1 180px' }}>
                 <label htmlFor="lookup-sort" style={{ color: 'var(--accent-color)', fontSize: '0.85rem' }}>Sort</label>
-                <select id="lookup-sort" value={lookupSort} onChange={(e) => setLookupSort(e.target.value)} style={{ padding: '0.75rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '1rem', minHeight: '44px' }}>
+                <select id="lookup-sort" value={lookupSort} onChange={(e) => setLookupSort(e.target.value)} style={{ padding: '0.75rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '1rem', minHeight: '44px', width: '100%' }}>
                   <option value="asc">Date/time (oldest first)</option>
                   <option value="desc">Date/time (newest first)</option>
                 </select>
@@ -895,7 +954,7 @@ function Dashboard() {
       {/* Modal: item details */}
       {selectedItem && (
         <div onClick={closeModal} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div className="dashboard-modal" onClick={(e) => e.stopPropagation()} style={{ backgroundColor: 'white', width: 'min(900px, 100%)', maxHeight: '90vh', borderRadius: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', maxWidth: '100%' }}>
+          <div className="dashboard-modal" onClick={(e) => e.stopPropagation()} style={{ backgroundColor: 'white', width: 'min(900px, 100%)', maxHeight: '90vh', borderRadius: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', maxWidth: '100%', minWidth: '320px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.9rem 1rem', borderBottom: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 {modalView !== 'main' && (
@@ -1024,41 +1083,52 @@ function Dashboard() {
                             }
 
                             return (
-                              <li key={item.id || itemId || idx} style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                  {/* Item Image */}
-                                  {(item.photo?.url || item.driverPhoto?.url) && (
-                                    <div style={{ width: '50px', height: '50px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0 }}>
-                                      <img 
-                                        src={item.photo?.url || item.driverPhoto?.url} 
-                                        alt={item.name || item.description || 'Item'} 
-                                        style={{ 
-                                          width: '100%', 
-                                          height: '100%', 
-                                          objectFit: 'cover',
-                                          backgroundColor: '#f5f5f5'
-                                        }}
-                                        onError={(e) => {
-                                          e.target.style.display = 'none'
-                                        }}
-                                      />
+                              <li key={item.id || itemId || idx} style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '1.5rem', marginBottom: '1rem' }}>
+                                <div style={{ marginBottom: '1rem' }}>
+                                  <div style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--secondary-color)' }}>
+                                    {item.name}
+                                  </div>
+                                  {item.description && (
+                                    <div style={{ color: 'var(--accent-color)', marginBottom: '0.5rem' }}>
+                                      <strong>Description:</strong> {item.description}
                                     </div>
                                   )}
-                                  <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: 600 }}>{item.name}</div>
-                                    {item.description && (
-                                      <div style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                                        <strong>Description:</strong> {item.description}
+                                  
+                                  {/* Photo - Bigger like in Returns */}
+                                  {(item.photo?.url || item.driverPhoto?.url) && (
+                                    <div style={{ marginBottom: '1rem' }}>
+                                      <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--secondary-color)' }}>Photo:</div>
+                                      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                        <div style={{ position: 'relative' }}>
+                                          <img 
+                                            src={item.photo?.url || item.driverPhoto?.url} 
+                                            alt={item.name || item.description || 'Item'} 
+                                            style={{ 
+                                              width: '120px', 
+                                              height: '120px', 
+                                              objectFit: 'cover', 
+                                              borderRadius: '12px', 
+                                              border: '1px solid var(--border-color)' 
+                                            }}
+                                            onError={(e) => {
+                                              e.target.style.display = 'none'
+                                            }}
+                                          />
+                                        </div>
                                       </div>
-                                    )}
-                                    <div style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                                      {item.size ? `Item Size: ${item.size} cubic ft` : ''}{item.notes ? ` • ${item.notes}` : ''}
                                     </div>
+                                  )}
+                                  
+                                  <div style={{ color: 'var(--accent-color)', fontSize: '0.9rem' }}>
+                                    {item.size && <div>Size: {item.size} cubic ft</div>}
+                                    {item.notes && <div>Notes: {item.notes}</div>}
                                   </div>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                   <div style={{ 
                                     color: 'var(--accent-color)', 
                                     fontSize: '0.75rem',
-                                    marginLeft: '1rem',
                                     backgroundColor: 'rgba(0, 47, 71, 0.05)',
                                     padding: '0.3rem 0.5rem',
                                     borderRadius: '4px',
@@ -1068,10 +1138,12 @@ function Dashboard() {
                                   }}>
                                     Item ID: {item.id ? item.id.slice(-4) : '—'}
                                   </div>
+                                  {item.status && (
+                                    <span style={{ backgroundColor: statusPillColor(item.status), color: 'white', padding: '0.25rem 0.6rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 700 }}>
+                                      {item.status}
+                                    </span>
+                                  )}
                                 </div>
-                                {item.status && (
-                                  <span style={{ backgroundColor: statusPillColor(item.status), color: 'white', padding: '0.2rem 0.5rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 700 }}>{item.status}</span>
-                                )}
                               </li>
                             )
                           })}
@@ -1090,40 +1162,68 @@ function Dashboard() {
                 const item = selectedItem
                 return (
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, color: 'var(--secondary-color)', fontSize: '1.1rem' }}>{item.name}</div>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <div style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--secondary-color)' }}>
+                        {item.name}
+                      </div>
                       {item.description && (
-                        <div style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>
+                        <div style={{ color: 'var(--accent-color)', marginBottom: '0.5rem' }}>
                           <strong>Description:</strong> {item.description}
                         </div>
                       )}
-                      <div style={{ fontSize: '0.9rem' }}>Pickup: {item.pickupReference} • {formatDateTime(item.pickupScheduled)}</div>
-                      <div style={{ fontSize: '0.85rem' }}>{item.pickupAddress}</div>
-                    </div>
-                    <div style={{ 
-                      color: 'var(--accent-color)', 
-                      fontSize: '0.75rem',
-                      marginLeft: '1rem',
-                      backgroundColor: 'rgba(0, 47, 71, 0.05)',
-                      padding: '0.4rem 0.6rem',
-                      borderRadius: '4px',
-                      border: '1px solid rgba(0, 47, 71, 0.1)',
-                      fontFamily: 'monospace',
-                      fontWeight: 600
-                    }}>
-                      Item ID: {item.id ? item.id.slice(-4) : '—'}
-                    </div>
-                      {item.status && (
-                        <span style={{ backgroundColor: statusPillColor(item.status), color: 'white', padding: '0.25rem 0.6rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 700 }}>{item.status}</span>
+                      
+                      {/* Photo - Bigger like in Returns */}
+                      {(item.photo?.url || item.driverPhoto?.url) && (
+                        <div style={{ marginBottom: '1rem' }}>
+                          <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--secondary-color)' }}>Photo:</div>
+                          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                            <div style={{ position: 'relative' }}>
+                              <img 
+                                src={item.photo?.url || item.driverPhoto?.url} 
+                                alt={item.name || 'Item'} 
+                                style={{ 
+                                  width: '120px', 
+                                  height: '120px', 
+                                  objectFit: 'cover', 
+                                  borderRadius: '12px', 
+                                  border: '1px solid var(--border-color)' 
+                                }}
+                                onError={(e) => {
+                                  e.target.style.display = 'none'
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
                       )}
+                      
+                      <div style={{ color: 'var(--accent-color)', fontSize: '0.9rem' }}>
+                        <div>Pickup: {item.pickupReference || '—'}</div>
+                        <div>Address: {item.pickupAddress || '—'}</div>
+                        {item.pickupScheduled && <div>Scheduled: {formatDateTime(item.pickupScheduled)}</div>}
+                        {item.size && <div>Size: {item.size} cubic ft</div>}
+                        {item.notes && <div>Notes: {item.notes}</div>}
+                      </div>
                     </div>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', columnGap: '1rem', rowGap: '0.4rem' }}>
-                      <div style={{ fontWeight: 600, color: 'var(--secondary-color)' }}>Item Size</div>
-                      <div>{item.size ? `${item.size} cubic ft` : '—'}</div>
-                      <div style={{ fontWeight: 600, color: 'var(--secondary-color)' }}>Notes</div>
-                      <div>{item.notes || '—'}</div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <div style={{ 
+                        color: 'var(--accent-color)', 
+                        fontSize: '0.75rem',
+                        backgroundColor: 'rgba(0, 47, 71, 0.05)',
+                        padding: '0.3rem 0.5rem',
+                        borderRadius: '4px',
+                        border: '1px solid rgba(0, 47, 71, 0.1)',
+                        fontFamily: 'monospace',
+                        fontWeight: 600
+                      }}>
+                        Item ID: {item.id ? item.id.slice(-4) : '—'}
+                      </div>
+                      {item.status && (
+                        <span style={{ backgroundColor: statusPillColor(item.status), color: 'white', padding: '0.25rem 0.6rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 700 }}>
+                          {item.status}
+                        </span>
+                      )}
                     </div>
                   </div>
                 )

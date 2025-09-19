@@ -1,29 +1,60 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
-import { auth } from './firebase'
+import { doc, getDoc } from 'firebase/firestore'
+import { auth, db } from './firebase'
 
-const AuthContext = createContext({ user: null, loading: true, logout: async () => {} })
+const AuthContext = createContext({ 
+  user: null, 
+  userRole: null,
+  isAdmin: false,
+  loading: true, 
+  logout: async () => {} 
+})
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
+  const [userRole, setUserRole] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (nextUser) => {
+    const unsub = onAuthStateChanged(auth, async (nextUser) => {
       setUser(nextUser)
+      
+      if (nextUser) {
+        // Fetch user role from Firestore
+        try {
+          const userDoc = await getDoc(doc(db, 'users', nextUser.uid))
+          if (userDoc.exists()) {
+            const userData = userDoc.data()
+            setUserRole(userData.role || 'user')
+          } else {
+            setUserRole('user')
+          }
+        } catch (error) {
+          console.error('Error fetching user role:', error)
+          setUserRole('user')
+        }
+      } else {
+        setUserRole(null)
+      }
+      
       setLoading(false)
     })
     return () => unsub()
   }, [])
 
+  const isAdmin = userRole === 'admin'
+
   const value = useMemo(() => ({
     user,
+    userRole,
+    isAdmin,
     loading,
     logout: async () => {
       await signOut(auth)
     },
-  }), [user, loading])
+  }), [user, userRole, isAdmin, loading])
 
   return (
     <AuthContext.Provider value={value}>
@@ -40,6 +71,14 @@ export function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return null
   if (!user) return <Navigate to="/login" replace />
+  return children
+}
+
+export function AdminRoute({ children }) {
+  const { user, isAdmin, loading } = useAuth()
+  if (loading) return null
+  if (!user) return <Navigate to="/login" replace />
+  if (!isAdmin) return <Navigate to="/dashboard" replace />
   return children
 }
 

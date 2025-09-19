@@ -1002,9 +1002,9 @@ button {
 }
 
 /* Header animations */
-.header {
-  /* animation: fadeInUp 0.8s ease-out; */
-}
+/* .header {
+  animation: fadeInUp 0.8s ease-out;
+} */
 
 .logo {
   transition: transform 0.3s ease;
@@ -1015,17 +1015,17 @@ button {
 }
 
 /* Hero section animations */
-.hero-section {
-  /* animation: fadeInUp 1s ease-out 0.2s both; */
+/* .hero-section {
+  animation: fadeInUp 1s ease-out 0.2s both;
 }
 
 .hero-section h1 {
-  /* animation: fadeInUp 1.2s ease-out 0.4s both; */
+  animation: fadeInUp 1.2s ease-out 0.4s both;
 }
 
 .hero-section .subtitle {
-  /* animation: fadeInUp 1.2s ease-out 0.6s both; */
-}
+  animation: fadeInUp 1.2s ease-out 0.6s both;
+} */
 
 /* Button animations */
 .cta-primary {
@@ -1197,9 +1197,9 @@ html {
 }
 
 /* Loading state for main content */
-.main-content {
-  /* animation: fadeInUp 0.6s ease-out; */
-}
+/* .main-content {
+  animation: fadeInUp 0.6s ease-out;
+} */
 
 /* New animations for hero section */
 @keyframes shimmer {
@@ -1974,13 +1974,286 @@ html {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 .main-content {
   flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Global mobile improvements */
+@media (max-width: 768px) {
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Prevent horizontal scroll on all elements */
+  body, html {
+    overflow-x: hidden;
+  }
+
+  /* Improve text readability on mobile */
+  body {
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Better touch targets for all interactive elements */
+  button, 
+  input[type="button"], 
+  input[type="submit"], 
+  input[type="reset"],
+  select, 
+  a,
+  [role="button"] {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    touch-action: manipulation; /* Remove double-tap delay */
+  }
+
+  /* Improve form elements */
+  input, select, textarea {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 0; /* Remove iOS styling */
+  }
+
+  /* Better focus states for accessibility */
+  button:focus,
+  input:focus,
+  select:focus,
+  textarea:focus,
+  a:focus {
+    outline: 2px solid var(--primary-color) !important;
+    outline-offset: 2px !important;
+  }
+
+  /* Improve scrolling performance */
+  .main-content {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Better modal handling on mobile */
+  .modal-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 1000 !important;
+  }
+
+  /* Prevent body scroll when modal is open */
+  body.modal-open {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+  }
 }
 
 /* Enhanced Mobile Responsiveness */
+
+/* Extra small mobile devices (320px and below) */
+@media (max-width: 320px) {
+  .main-content {
+    padding: 0.5rem !important;
+  }
+
+  .header {
+    padding: 0.5rem !important;
+    gap: 0.5rem !important;
+  }
+
+  .logo {
+    height: 40px !important;
+  }
+
+  .nav-menu {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+
+  .download-btn, .login-tab {
+    width: 100% !important;
+    padding: 0.5rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  .hero-section {
+    padding: 2rem 0.5rem !important;
+    margin: 0.5rem 0 !important;
+    border-radius: 16px !important;
+  }
+
+  .hero-section h1 {
+    font-size: 1.75rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .hero-section .subtitle {
+    font-size: 1rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  .hero-buttons {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  .cta-primary, .cta-secondary {
+    padding: 0.75rem 1.5rem !important;
+    font-size: 0.9rem !important;
+  }
+
+  .scenario-card, .feature-card {
+    padding: 1rem !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  .form-container {
+    padding: 1rem !important;
+    margin: 0.5rem !important;
+  }
+
+  .form-input, .form-button {
+    padding: 0.75rem !important;
+    font-size: 0.9rem !important;
+  }
+}
+
+/* Small mobile devices (321px to 480px) */
+@media (min-width: 321px) and (max-width: 480px) {
+  .main-content {
+    padding: 0.75rem !important;
+  }
+
+  .header {
+    padding: 0.75rem !important;
+    gap: 0.75rem !important;
+  }
+
+  .logo {
+    height: 50px !important;
+  }
+
+  .nav-menu {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    width: 100% !important;
+  }
+
+  .download-btn, .login-tab {
+    width: 100% !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  .hero-section {
+    padding: 3rem 1rem !important;
+    border-radius: 20px !important;
+  }
+
+  .hero-section h1 {
+    font-size: 2rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  .hero-section .subtitle {
+    font-size: 1.125rem !important;
+    margin-bottom: 2rem !important;
+  }
+
+  .hero-buttons {
+    gap: 1rem !important;
+  }
+
+  .cta-primary, .cta-secondary {
+    padding: 1rem 2rem !important;
+    font-size: 1rem !important;
+  }
+
+  .scenario-card, .feature-card {
+    padding: 1.5rem !important;
+  }
+
+  .form-container {
+    padding: 1.5rem !important;
+    margin: 1rem !important;
+  }
+}
+
+/* Medium mobile devices (481px to 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+  .header {
+    flex-direction: row !important;
+    padding: 1rem !important;
+    gap: 1rem !important;
+    height: auto !important;
+    min-height: 80px !important;
+  }
+
+  .logo {
+    height: 60px !important;
+    max-width: 200px !important;
+  }
+
+  .nav-menu {
+    flex-direction: row !important;
+    justify-content: center !important;
+    gap: 0.75rem !important;
+    width: 100% !important;
+    flex-wrap: wrap !important;
+  }
+
+  .download-btn, .login-tab {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.9rem !important;
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .hero-section {
+    padding: 4rem 1rem !important;
+    margin: 1rem 0 !important;
+    border-radius: 20px !important;
+  }
+
+  .hero-section h1 {
+    font-size: clamp(2rem, 8vw, 3rem) !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  .hero-section .subtitle {
+    font-size: clamp(1rem, 4vw, 1.25rem) !important;
+    margin-bottom: 2rem !important;
+  }
+
+  .hero-buttons {
+    gap: 1rem !important;
+    margin-top: 1.5rem !important;
+  }
+
+  .cta-primary, .cta-secondary {
+    padding: 1rem 2rem !important;
+    font-size: 1rem !important;
+  }
+
+  .scenario-card, .feature-card {
+    padding: 2rem 1.5rem !important;
+  }
+
+  .form-container {
+    padding: 2rem !important;
+    margin: 1rem auto !important;
+  }
+}
 
 /* Dashboard specific mobile improvements */
 @media (max-width: 768px) {
@@ -2002,6 +2275,7 @@ html {
     width: 95vw !important;
     max-width: 95vw !important;
     margin: 0.5rem !important;
+    min-width: 280px !important;
   }
 
   .dashboard-modal-content {
@@ -2025,6 +2299,18 @@ html {
     flex: 1 1 auto !important;
     min-width: 120px !important;
   }
+
+  /* Better mobile spacing for dashboard sections */
+  .main-content section {
+    margin-bottom: 1.5rem !important;
+  }
+
+  /* Improve mobile button spacing */
+  .dashboard-lookup-form button,
+  .dashboard-lookup-form input,
+  .dashboard-lookup-form select {
+    margin-bottom: 0.5rem !important;
+  }
 }
 
 /* Returns component mobile improvements */
@@ -2035,13 +2321,15 @@ html {
     gap: 1rem !important;
   }
 
-  .returns-search-form > * {
+  .returns-search-form > div {
     width: 100% !important;
     min-width: auto !important;
+    flex: none !important;
   }
 
   .returns-item-card {
     flex-direction: column !important;
+    padding: 1rem !important;
   }
 
   .returns-item-actions {
@@ -2053,6 +2341,296 @@ html {
   .returns-item-actions button {
     flex: 1 1 auto !important;
     min-width: 120px !important;
+  }
+
+  /* Better mobile spacing for returns sections */
+  .main-content section {
+    margin-bottom: 1.5rem !important;
+  }
+
+  /* Better mobile layout for returns item cards */
+  .returns-item-card img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* QR Code modal mobile improvements */
+  .qr-code-modal {
+    padding: 0.5rem !important;
+  }
+
+  .qr-code-modal-content {
+    padding: 1rem !important;
+    max-width: 95vw !important;
+    max-height: 90vh !important;
+  }
+
+  .qr-code-modal img {
+    max-width: 300px !important;
+    max-height: 300px !important;
+  }
+}
+
+/* Extra small mobile improvements for Returns */
+@media (max-width: 320px) {
+  .returns-item-card {
+    padding: 0.75rem !important;
+  }
+
+  .returns-item-actions button {
+    min-width: 100px !important;
+    padding: 0.5rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  .qr-code-modal-content {
+    padding: 0.75rem !important;
+  }
+
+  .qr-code-modal img {
+    max-width: 250px !important;
+    max-height: 250px !important;
+  }
+}
+
+/* Additional mobile improvements for edge cases */
+@media (max-width: 280px) {
+  .main-content {
+    padding: 0.25rem !important;
+  }
+
+  .header {
+    padding: 0.25rem !important;
+    gap: 0.25rem !important;
+  }
+
+  .logo {
+    height: 35px !important;
+  }
+
+  .nav-menu {
+    gap: 0.25rem !important;
+  }
+
+  .download-btn, .login-tab {
+    padding: 0.5rem !important;
+    font-size: 0.8rem !important;
+    min-height: 40px !important;
+  }
+
+  .hero-section {
+    padding: 1.5rem 0.25rem !important;
+    margin: 0.25rem 0 !important;
+  }
+
+  .hero-section h1 {
+    font-size: 1.5rem !important;
+  }
+
+  .hero-section .subtitle {
+    font-size: 0.9rem !important;
+  }
+
+  .cta-primary, .cta-secondary {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  .scenario-card, .feature-card {
+    padding: 0.75rem !important;
+  }
+
+  .form-container {
+    padding: 0.75rem !important;
+    margin: 0.25rem !important;
+  }
+
+  .form-input, .form-button {
+    padding: 0.5rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  .dashboard-modal,
+  .returns-modal,
+  .qr-code-modal {
+    width: 99vw !important;
+    max-width: 99vw !important;
+    margin: 0.125rem !important;
+  }
+
+  .qr-code-modal img {
+    max-width: 200px !important;
+    max-height: 200px !important;
+  }
+}
+
+/* High DPI mobile devices */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .logo,
+  .footer-logo {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Dark mode support for mobile */
+@media (prefers-color-scheme: dark) and (max-width: 768px) {
+  .hero-section {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 25%, #1a1a1a 50%, #0d0d0d 75%, #000000 100%) !important;
+  }
+
+  .scenario-card,
+  .feature-card {
+    background-color: #2d2d2d !important;
+    color: #ffffff !important;
+  }
+
+  .form-container {
+    background-color: #2d2d2d !important;
+    color: #ffffff !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Users page mobile improvements */
+@media (max-width: 768px) {
+  .users-search-form {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+
+  .users-search-form > div {
+    width: 100% !important;
+    min-width: auto !important;
+    flex: none !important;
+  }
+
+  .users-item-card {
+    flex-direction: column !important;
+    padding: 1rem !important;
+  }
+
+  .users-item-actions {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+    margin-top: 1rem !important;
+  }
+
+  .users-item-actions button {
+    flex: 1 1 auto !important;
+    min-width: 120px !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .users-modal {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: 0.5rem !important;
+    min-width: 280px !important;
+  }
+
+  .users-modal-content {
+    padding: 1rem !important;
+  }
+
+  .users-modal-buttons {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  .users-modal-buttons button {
+    width: 100% !important;
+    min-height: 44px !important;
+  }
+}
+
+/* Extra small mobile improvements for Users */
+@media (max-width: 320px) {
+  .users-item-card {
+    padding: 0.75rem !important;
+  }
+
+  .users-item-actions button {
+    min-width: 100px !important;
+    padding: 0.5rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  .users-modal-content {
+    padding: 0.75rem !important;
+  }
+}
+
+/* Small mobile improvements for Users */
+@media (min-width: 321px) and (max-width: 480px) {
+  .users-item-card {
+    padding: 1rem !important;
+  }
+
+  .users-item-actions button {
+    min-width: 110px !important;
+    padding: 0.75rem !important;
+  }
+}
+
+/* Small mobile improvements for Returns */
+@media (min-width: 321px) and (max-width: 480px) {
+  .returns-item-card {
+    padding: 1rem !important;
+  }
+
+  .returns-item-actions button {
+    min-width: 110px !important;
+    padding: 0.75rem !important;
+  }
+
+  .qr-code-modal img {
+    max-width: 280px !important;
+    max-height: 280px !important;
+  }
+}
+
+/* Medium screens - better balance */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .returns-search-form {
+    gap: 1rem !important;
+  }
+  
+  .returns-search-form > div:first-child {
+    flex: 2 1 250px !important;
+    min-width: 200px !important;
+  }
+  
+  .returns-search-form > div:nth-child(2) {
+    flex: 1 1 140px !important;
+    min-width: 140px !important;
+  }
+}
+
+/* Large screens - optimal layout */
+@media (min-width: 1025px) {
+  .returns-search-form {
+    gap: 0.75rem !important;
+  }
+  
+  .returns-search-form > div:first-child {
+    flex: 2 1 300px !important;
+    min-width: 250px !important;
+  }
+  
+  .returns-search-form > div:nth-child(2) {
+    flex: 1 1 160px !important;
+    min-width: 160px !important;
   }
 }
 
@@ -2070,6 +2648,7 @@ html {
     padding: 1rem !important;
     font-size: 16px !important; /* Prevents zoom on iOS */
     min-height: 44px !important;
+    box-sizing: border-box !important;
   }
 
   .form-button {
@@ -2077,6 +2656,84 @@ html {
     padding: 1rem !important;
     font-size: 1rem !important;
     min-height: 44px !important;
+  }
+
+  /* Login/SignUp form specific improvements */
+  .hero-section.form-container {
+    max-width: 100% !important;
+    margin: 1rem !important;
+    padding: 1.5rem !important;
+  }
+
+  .hero-section.form-container h1 {
+    font-size: 1.75rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  .hero-section.form-container form {
+    gap: 1rem !important;
+  }
+
+  .hero-section.form-container input {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    padding: 1rem !important;
+    min-height: 44px !important;
+  }
+
+  .hero-section.form-container button {
+    font-size: 1rem !important;
+    padding: 1rem !important;
+    min-height: 44px !important;
+  }
+
+  .hero-section.form-container p {
+    font-size: 0.9rem !important;
+    text-align: center !important;
+  }
+}
+
+/* Extra small mobile form improvements */
+@media (max-width: 320px) {
+  .form-container {
+    padding: 1rem !important;
+    margin: 0.5rem !important;
+  }
+
+  .form-input, .form-button {
+    padding: 0.75rem !important;
+    font-size: 0.9rem !important;
+  }
+
+  .hero-section.form-container {
+    padding: 1rem !important;
+    margin: 0.5rem !important;
+  }
+
+  .hero-section.form-container h1 {
+    font-size: 1.5rem !important;
+  }
+
+  .hero-section.form-container input,
+  .hero-section.form-container button {
+    padding: 0.75rem !important;
+    font-size: 0.9rem !important;
+  }
+}
+
+/* Small mobile form improvements */
+@media (min-width: 321px) and (max-width: 480px) {
+  .form-container {
+    padding: 1.5rem !important;
+    margin: 1rem !important;
+  }
+
+  .hero-section.form-container {
+    padding: 1.5rem !important;
+    margin: 1rem !important;
+  }
+
+  .hero-section.form-container h1 {
+    font-size: 1.75rem !important;
   }
 }
 
@@ -2204,5 +2861,316 @@ html {
 
   .feature-card {
     padding: 1rem !important;
+  }
+
+  /* Modal improvements for very small screens */
+  .dashboard-modal,
+  .returns-modal,
+  .qr-code-modal {
+    width: 98vw !important;
+    max-width: 98vw !important;
+    margin: 0.25rem !important;
+    padding: 0.5rem !important;
+  }
+
+  .dashboard-modal-content,
+  .returns-modal-content,
+  .qr-code-modal-content {
+    padding: 0.75rem !important;
+  }
+
+  /* Button improvements for very small screens */
+  button {
+    min-height: 40px !important;
+    min-width: 40px !important;
+    padding: 0.5rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* Input improvements for very small screens */
+  input, select, textarea {
+    min-height: 40px !important;
+    padding: 0.5rem !important;
+    font-size: 0.9rem !important;
+  }
+}
+
+/* Modal improvements for all mobile sizes */
+@media (max-width: 768px) {
+  .dashboard-modal,
+  .returns-modal {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: 0.5rem !important;
+    min-width: 280px !important;
+  }
+
+  .dashboard-modal-content,
+  .returns-modal-content {
+    padding: 1rem !important;
+  }
+
+  /* QR Code modal mobile improvements */
+  .qr-code-modal {
+    padding: 0.5rem !important;
+  }
+
+  .qr-code-modal-content {
+    padding: 1.5rem !important;
+    max-width: 95vw !important;
+    max-height: 90vh !important;
+  }
+
+  .qr-code-modal img {
+    max-width: 300px !important;
+    max-height: 300px !important;
+  }
+
+  /* Modal button improvements */
+  .modal-buttons {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  .modal-buttons button {
+    width: 100% !important;
+    min-height: 44px !important;
+  }
+}
+
+/* Landscape orientation improvements for mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .header {
+    flex-direction: row !important;
+    padding: 0.5rem 1rem !important;
+    height: 60px !important;
+  }
+
+  .logo {
+    height: 40px !important;
+  }
+
+  .nav-menu {
+    flex-direction: row !important;
+    gap: 0.5rem !important;
+  }
+
+  .hero-section {
+    padding: 2rem 1rem !important;
+  }
+
+  .hero-section h1 {
+    font-size: 2rem !important;
+  }
+
+  .hero-section .subtitle {
+    font-size: 1.125rem !important;
+  }
+
+  .hero-buttons {
+    flex-direction: row !important;
+    gap: 1rem !important;
+  }
+
+  /* Modal improvements for landscape */
+  .dashboard-modal,
+  .returns-modal,
+  .qr-code-modal {
+    max-height: 85vh !important;
+  }
+
+  .qr-code-modal img {
+    max-width: 250px !important;
+    max-height: 250px !important;
+  }
+}
+
+/* Additional mobile improvements for edge cases */
+@media (max-width: 280px) {
+  .main-content {
+    padding: 0.25rem !important;
+  }
+
+  .header {
+    padding: 0.25rem !important;
+    gap: 0.25rem !important;
+  }
+
+  .logo {
+    height: 35px !important;
+  }
+
+  .nav-menu {
+    gap: 0.25rem !important;
+  }
+
+  .download-btn, .login-tab {
+    padding: 0.5rem !important;
+    font-size: 0.8rem !important;
+    min-height: 40px !important;
+  }
+
+  .hero-section {
+    padding: 1.5rem 0.25rem !important;
+    margin: 0.25rem 0 !important;
+  }
+
+  .hero-section h1 {
+    font-size: 1.5rem !important;
+  }
+
+  .hero-section .subtitle {
+    font-size: 0.9rem !important;
+  }
+
+  .cta-primary, .cta-secondary {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  .scenario-card, .feature-card {
+    padding: 0.75rem !important;
+  }
+
+  .form-container {
+    padding: 0.75rem !important;
+    margin: 0.25rem !important;
+  }
+
+  .form-input, .form-button {
+    padding: 0.5rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  .dashboard-modal,
+  .returns-modal,
+  .qr-code-modal {
+    width: 99vw !important;
+    max-width: 99vw !important;
+    margin: 0.125rem !important;
+  }
+
+  .qr-code-modal img {
+    max-width: 200px !important;
+    max-height: 200px !important;
+  }
+}
+
+/* High DPI mobile devices */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .logo,
+  .footer-logo {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Dark mode support for mobile */
+@media (prefers-color-scheme: dark) and (max-width: 768px) {
+  .hero-section {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 25%, #1a1a1a 50%, #0d0d0d 75%, #000000 100%) !important;
+  }
+
+  .scenario-card,
+  .feature-card {
+    background-color: #2d2d2d !important;
+    color: #ffffff !important;
+  }
+
+  .form-container {
+    background-color: #2d2d2d !important;
+    color: #ffffff !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Users page mobile improvements */
+@media (max-width: 768px) {
+  .users-search-form {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+
+  .users-search-form > div {
+    width: 100% !important;
+    min-width: auto !important;
+    flex: none !important;
+  }
+
+  .users-item-card {
+    flex-direction: column !important;
+    padding: 1rem !important;
+  }
+
+  .users-item-actions {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+    margin-top: 1rem !important;
+  }
+
+  .users-item-actions button {
+    flex: 1 1 auto !important;
+    min-width: 120px !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .users-modal {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: 0.5rem !important;
+    min-width: 280px !important;
+  }
+
+  .users-modal-content {
+    padding: 1rem !important;
+  }
+
+  .users-modal-buttons {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  .users-modal-buttons button {
+    width: 100% !important;
+    min-height: 44px !important;
+  }
+}
+
+/* Extra small mobile improvements for Users */
+@media (max-width: 320px) {
+  .users-item-card {
+    padding: 0.75rem !important;
+  }
+
+  .users-item-actions button {
+    min-width: 100px !important;
+    padding: 0.5rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  .users-modal-content {
+    padding: 0.75rem !important;
+  }
+}
+
+/* Small mobile improvements for Users */
+@media (min-width: 321px) and (max-width: 480px) {
+  .users-item-card {
+    padding: 1rem !important;
+  }
+
+  .users-item-actions button {
+    min-width: 110px !important;
+    padding: 0.75rem !important;
   }
 }

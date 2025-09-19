@@ -189,19 +189,148 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="features-section">
-        <div className="feature-card">
-          <h3>Real-Time Tracking</h3>
-          <p>Know exactly where your packages are, every step of the way. Get photos and updates from pickup to delivery.</p>
-        </div>
-        <div className="feature-card">
-          <h3>Flexible Scheduling</h3>
-          <p>Just select a time that works for you and we'll handle the rest.</p>
-        </div>
-        <div className="feature-card">
-          <h3>Return Made Easy</h3>
-          <p>Just hand it to us and we'll handle the rest.</p>
+      {/* Pricing Section */}
+      <section id="pricing" style={{ padding: '4rem 0', backgroundColor: 'white', margin: '2rem 0', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
+        <div style={{ padding: '0 2rem' }}>
+          <h2 style={{ textAlign: 'center', marginBottom: '3rem', color: 'var(--secondary-color)' }}>Simple, Transparent Pricing</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+            
+            {/* One-Time Haul */}
+            <div style={{ 
+              backgroundColor: '#f8f9fa', 
+              padding: '2rem', 
+              borderRadius: '12px', 
+              border: '2px solid #e9ecef',
+              textAlign: 'center',
+              position: 'relative'
+            }}>
+              <h3 style={{ color: 'var(--secondary-color)', marginBottom: '1rem' }}>One-Time Haul</h3>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>$5.00</span>
+                <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>per haul</span>
+              </div>
+              <div style={{ marginBottom: '2rem' }}>
+                <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
+                  <strong>1 pickup per month</strong>
+                </div>
+                {/* <div style={{ color: 'var(--accent-color)' }}>
+                  <strong>3 packages per pickup</strong>
+                </div> */}
+              </div>
+              <button style={{
+                backgroundColor: 'var(--primary-color)',
+                color: 'white',
+                border: 'none',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                width: '100%'
+              }}>
+                Get Started
+              </button>
+            </div>
+
+            {/* Basic */}
+            <div style={{ 
+              backgroundColor: 'white', 
+              padding: '2rem', 
+              borderRadius: '12px', 
+              border: '2px solid var(--primary-color)',
+              textAlign: 'center',
+              position: 'relative',
+              transform: 'scale(1.05)',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
+            }}>
+              <div style={{ 
+                position: 'absolute', 
+                top: '-12px', 
+                left: '50%', 
+                transform: 'translateX(-50%)',
+                backgroundColor: 'var(--primary-color)',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '20px',
+                fontSize: '0.9rem',
+                fontWeight: '600'
+              }}>
+                Most Popular
+              </div>
+              <h3 style={{ color: 'var(--secondary-color)', marginBottom: '1rem' }}>Basic</h3>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>$8.00</span>
+                <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>/month</span>
+              </div>
+              <div style={{ marginBottom: '1rem', color: 'var(--accent-color)', fontSize: '0.9rem' }}>
+                <span style={{ textDecoration: 'line-through', opacity: '0.7' }}>$96.00</span>
+                <span style={{ marginLeft: '0.5rem', color: 'var(--primary-color)', fontWeight: '600' }}>$86.40/year (10% off)</span>
+              </div>
+              <div style={{ marginBottom: '2rem' }}>
+                <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
+                  <strong>2 pickups per month</strong>
+                </div>
+                {/* <div style={{ color: 'var(--accent-color)' }}>
+                  <strong>5 packages per pickup</strong>
+                </div> */}
+              </div>
+              <button style={{
+                backgroundColor: 'var(--primary-color)',
+                color: 'white',
+                border: 'none',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                width: '100%'
+              }}>
+                Choose Basic
+              </button>
+            </div>
+
+            {/* Premium */}
+            <div style={{ 
+              backgroundColor: '#f8f9fa', 
+              padding: '2rem', 
+              borderRadius: '12px', 
+              border: '2px solid #e9ecef',
+              textAlign: 'center',
+              position: 'relative'
+            }}>
+              <h3 style={{ color: 'var(--secondary-color)', marginBottom: '1rem' }}>Premium</h3>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>$15.00</span>
+                <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>/month</span>
+              </div>
+              <div style={{ marginBottom: '1rem', color: 'var(--accent-color)', fontSize: '0.9rem' }}>
+                <span style={{ textDecoration: 'line-through', opacity: '0.7' }}>$180.00</span>
+                <span style={{ marginLeft: '0.5rem', color: 'var(--primary-color)', fontWeight: '600' }}>$162.00/year (10% off)</span>
+              </div>
+              <div style={{ marginBottom: '2rem' }}>
+                <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
+                  <strong>Unlimited pickups</strong>
+                </div>
+                {/* <div style={{ color: 'var(--accent-color)' }}>
+                  <strong>8 packages per pickup</strong>
+                </div> */}
+              </div>
+              <button style={{
+                backgroundColor: 'var(--primary-color)',
+                color: 'white',
+                border: 'none',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                width: '100%'
+              }}>
+                Go Premium
+              </button>
+            </div>
+
+          </div>
         </div>
       </section>
 
@@ -218,15 +347,15 @@ function LandingPage() {
 
       {/* Final CTA */}
       <section className="hero-section" style={{ margin: '2rem 0' }}>
-        <h2>Ready to simplify your package life?</h2>
+        <h2>Ready to simplify your  returns?</h2>
         <p style={{ marginBottom: '2rem', opacity: '0.9' }}>
         </p>
         <button className="cta-primary" style={{ fontSize: '1.2rem', padding: '1rem 2rem' }}>
           Claim your free pickup
         </button>
-        <p style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: '0.7' }}>
+        {/* <p style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: '0.7' }}>
           Up to 3 boxes free
-        </p>
+        </p> */}
       </section>
     </main>
   )

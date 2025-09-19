@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signInWithEmailAndPassword } from 'firebase/auth'
-import { auth } from './firebase'
+import { doc, updateDoc } from 'firebase/firestore'
+import { auth, db } from './firebase'
 import './App.css'
 
 function Login() {
@@ -16,7 +17,18 @@ function Login() {
     setError('')
     setSubmitting(true)
     try {
-      await signInWithEmailAndPassword(auth, email, password)
+      const cred = await signInWithEmailAndPassword(auth, email, password)
+      
+      // Update last login time
+      try {
+        await updateDoc(doc(db, 'users', cred.user.uid), {
+          lastLoginAt: new Date()
+        })
+      } catch (updateError) {
+        console.log('Could not update last login time:', updateError)
+        // Don't fail login if this update fails
+      }
+      
       navigate('/dashboard')
     } catch (err) {
       setError(err.message || 'Login failed')
@@ -40,7 +52,9 @@ function Login() {
               padding: '1rem', 
               border: '1px solid #ddd', 
               borderRadius: '4px',
-              fontSize: '1rem'
+              fontSize: '1rem',
+              minHeight: '44px',
+              width: '100%'
             }} 
           />
           <input 
@@ -53,7 +67,9 @@ function Login() {
               padding: '1rem', 
               border: '1px solid #ddd', 
               borderRadius: '4px',
-              fontSize: '1rem'
+              fontSize: '1rem',
+              minHeight: '44px',
+              width: '100%'
             }} 
           />
           {error && (
@@ -71,7 +87,9 @@ function Login() {
               borderRadius: '4px',
               fontSize: '1rem',
               cursor: 'pointer',
-              opacity: submitting ? 0.7 : 1
+              opacity: submitting ? 0.7 : 1,
+              minHeight: '44px',
+              width: '100%'
             }}
           >
             {submitting ? 'Logging in...' : 'Login'}
