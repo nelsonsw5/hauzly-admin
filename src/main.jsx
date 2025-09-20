@@ -12,6 +12,7 @@ import Dashboard from './Dashboard.jsx'
 import { AuthProvider, ProtectedRoute, AdminRoute } from './AuthContext.jsx'
 import Returns from './Returns.jsx'
 import Users from './Users.jsx'
+import Purchase from './Purchase.jsx'
 
 const router = createBrowserRouter([
   {
@@ -38,6 +39,7 @@ const router = createBrowserRouter([
           <Users />
         </AdminRoute>
       ) },
+      { path: 'purchase', element: <Purchase /> },
     ],
   },
 ])

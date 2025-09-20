@@ -1,10 +1,18 @@
 import './App.css'
+import { useNavigate } from 'react-router-dom'
 import tantrumMomImage from './assets/tantrum-blonde-mom.png'
 import happyPickupImage from './assets/happy-package-pickup.png'
 import stacksCrazyImage from './assets/stacks-crazy.png'
-import screenRecordingVideo from './assets/screen-record.MP4'
+import screenRecordingVideo from './assets/schedule-pickup.MP4'
+import packageReceivedVideo from './assets/package-received.mov'
+import pickupImage from './assets/pickup-phone.png'
 
 function LandingPage() {
+  const navigate = useNavigate()
+
+  const handlePurchase = (plan) => {
+    navigate('/purchase', { state: { plan } })
+  }
   return (
     <main className="main-content">
       {/* Hero Section */}
@@ -14,21 +22,57 @@ function LandingPage() {
         <p className="subtitle">
           Haulzy handles your returns so you can focus on what matters most
         </p>
-        <div className="hero-buttons" style={{ marginTop: '2rem', display: 'flex', gap: '2rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button className="cta-primary">Try it out</button>
+        <div
+          className="hero-buttons"
+          style={{
+            marginTop: '2rem',
+            display: 'flex',
+            gap: '2rem',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
+          <button
+            className="cta-primary"
+            onClick={() => handlePurchase('onetime')}
+          >
+            Try it out
+          </button>
         </div>
       </section>
 
       {/* How It Works */}
-      <section style={{ padding: '4rem 0', backgroundColor: 'white', margin: '2rem 0', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
+      <section
+        style={{
+          padding: '4rem 0',
+          backgroundColor: 'white',
+          margin: '2rem 0',
+          borderRadius: '12px',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+        }}
+      >
         <div style={{ padding: '0 2rem' }}>
-          <h2 style={{ textAlign: 'center', marginBottom: '3rem', color: 'var(--secondary-color)' }}>How Haulzy Works</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
-            
-            <div style={{ textAlign: 'center' }}>
+          <h2
+            style={{
+              textAlign: 'center',
+              marginBottom: '3rem',
+              color: 'var(--secondary-color)',
+            }}
+          >
+            How Haulzy Works
+          </h2>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '2rem',
+              alignItems: 'start',
+            }}
+          >
+            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
               {/* Single Video - Centered */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                <video 
+              <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+                <video
                   src={screenRecordingVideo}
                   autoPlay
                   loop
@@ -39,153 +83,63 @@ function LandingPage() {
                     height: 'auto',
                     borderRadius: '16px',
                     boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)',
-                    border: '3px solid var(--primary-color)'
+                    border: '3px solid var(--primary-color)',
                   }}
                 />
               </div>
-              
+
               <h3>Request</h3>
-              <p>Open the app and tell us what you need - pickup, return, or hold service.</p>
+              <p>
+                Open the app and tell us where, when and what you need.
+              </p>
             </div>
-            
-            <div style={{ textAlign: 'center' }}>
-              <div className="how-it-works-icon" style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚚</div>
+
+            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+                <img
+                  src={pickupImage}
+                  alt="Package pickup service"
+                  style={{
+                    width: '280px',
+                    height: 'auto',
+                    borderRadius: '16px',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)',
+                    border: '3px solid var(--primary-color)',
+                    display: 'block',
+                    objectFit: 'contain',
+                  }}
+                />
+              </div>
               <h3>We Handle It</h3>
-              <p>Our trusted drivers pick up, deliver, or store your packages with care.</p>
+              <p>
+                Our trusted drivers pick up, transport and return your packages.
+                with care.
+              </p>
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <div className="how-it-works-icon" style={{ fontSize: '3rem', marginBottom: '1rem' }}>📦</div>
+            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+                <video
+                  src={packageReceivedVideo}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  style={{
+                    width: '280px',
+                    height: 'auto',
+                    borderRadius: '16px',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)',
+                    border: '3px solid var(--primary-color)',
+                  }}
+                />
+              </div>
               <h3>Stay Updated</h3>
-              <p>Get real-time updates and photos so you always know where your packages are.</p>
+              <p>
+                Get real-time updates and photos so you always know where your
+                packages are.
+              </p>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Scenarios Section - Horizontal Grid with Wide Card Spacing */}
-      <section style={{ padding: '4rem 0' }}>
-        <div className="responsive-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '4rem', maxWidth: '1600px', margin: '0 auto' }}>
-          
-          <div className="scenario-card" style={{ 
-            textAlign: 'center',
-            padding: '3rem 2.5rem',
-            margin: '0 1.5rem'
-          }}>
-            <div style={{ marginBottom: '2rem' }}>
-              <img 
-                src={tantrumMomImage} 
-                alt="Mom with screaming kids waiting in line with packages" 
-                className="responsive-image"
-                style={{ 
-                  width: '250px',
-                  height: 'auto',
-                  borderRadius: '10px',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)'
-                }} 
-              />
-            </div>
-            <h2 style={{ 
-              fontSize: 'clamp(1.5rem, 2.5vw, 2rem)', 
-              marginBottom: '1.25rem',
-              color: 'var(--secondary-color)'
-            }}>
-              No waiting in line
-            </h2>
-            <p style={{ 
-              fontSize: '1rem', 
-              lineHeight: '1.6', 
-              marginBottom: '2rem',
-              color: 'var(--accent-color)',
-              maxWidth: '300px',
-              margin: '0 auto 2rem auto'
-            }}>
-              Skip the post office queues and crowded shipping centers. We handle all your pickups and deliveries while you get on with your day.
-            </p>
-            <button className="scenario-cta">
-              Schedule Pickup
-            </button>
-          </div>
-
-          <div className="scenario-card" style={{ 
-            textAlign: 'center',
-            padding: '3rem 2.5rem',
-            margin: '0 1.5rem'
-          }}>
-            <div style={{ marginBottom: '2rem' }}>
-              <img 
-                src={stacksCrazyImage} 
-                alt="Crazy stacks of packages piled up at the door" 
-                className="responsive-image"
-                style={{ 
-                  width: '250px',
-                  height: 'auto',
-                  borderRadius: '10px',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)'
-                }} 
-              />
-            </div>
-            <h2 style={{ 
-              fontSize: 'clamp(1.5rem, 2.5vw, 2rem)', 
-              marginBottom: '1.25rem',
-              color: 'var(--secondary-color)'
-            }}>
-              No stacks of boxes
-            </h2>
-            <p style={{ 
-              fontSize: '1rem', 
-              lineHeight: '1.6', 
-              marginBottom: '2rem',
-              color: 'var(--accent-color)',
-              maxWidth: '300px',
-              margin: '0 auto 2rem auto'
-            }}>
-              Don't let packages pile up at your door or clutter your home. We'll pick them up, store them safely, and deliver when you're ready.
-            </p>
-            <button className="scenario-cta">
-              Arrange Storage
-            </button>
-          </div>
-
-          <div className="scenario-card" style={{ 
-            textAlign: 'center',
-            padding: '3rem 2.5rem',
-            margin: '0 1.5rem'
-          }}>
-            <div style={{ marginBottom: '2rem' }}>
-              <img 
-                src={happyPickupImage} 
-                alt="Happy customer with smooth package pickup experience" 
-                className="responsive-image"
-                style={{ 
-                  width: '250px',
-                  height: 'auto',
-                  borderRadius: '10px',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)'
-                }} 
-              />
-            </div>
-            <h2 style={{ 
-              fontSize: 'clamp(1.5rem, 2.5vw, 2rem)', 
-              marginBottom: '1.25rem',
-              color: 'var(--secondary-color)'
-            }}>
-              Effortless returns
-            </h2>
-            <p style={{ 
-              fontSize: '1rem', 
-              lineHeight: '1.6', 
-              marginBottom: '2rem',
-              color: 'var(--accent-color)',
-              maxWidth: '300px',
-              margin: '0 auto 2rem auto'
-            }}>
-              No trips to the store or waiting in line.
-            </p>
-            <button className="scenario-cta">
-              Book Return
-            </button>
-          </div>
-
         </div>
       </section>
 
@@ -217,17 +171,20 @@ function LandingPage() {
                   <strong>3 packages per pickup</strong>
                 </div> */}
               </div>
-              <button style={{
-                backgroundColor: 'var(--primary-color)',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '8px',
-                fontSize: '1rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                width: '100%'
-              }}>
+              <button 
+                onClick={() => handlePurchase('onetime')}
+                style={{
+                  backgroundColor: 'var(--primary-color)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  width: '100%'
+                }}
+              >
                 Get Started
               </button>
             </div>
@@ -274,17 +231,20 @@ function LandingPage() {
                   <strong>5 packages per pickup</strong>
                 </div> */}
               </div>
-              <button style={{
-                backgroundColor: 'var(--primary-color)',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '8px',
-                fontSize: '1rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                width: '100%'
-              }}>
+              <button 
+                onClick={() => handlePurchase('basic')}
+                style={{
+                  backgroundColor: 'var(--primary-color)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  width: '100%'
+                }}
+              >
                 Choose Basic
               </button>
             </div>
@@ -315,17 +275,20 @@ function LandingPage() {
                   <strong>8 packages per pickup</strong>
                 </div> */}
               </div>
-              <button style={{
-                backgroundColor: 'var(--primary-color)',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '8px',
-                fontSize: '1rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                width: '100%'
-              }}>
+              <button 
+                onClick={() => handlePurchase('premium')}
+                style={{
+                  backgroundColor: 'var(--primary-color)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  width: '100%'
+                }}
+              >
                 Go Premium
               </button>
             </div>
