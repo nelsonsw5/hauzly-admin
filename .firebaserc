@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "haulzy-prod-9545d"
+    "default" : "haulzy-dev",
+    "prod": "haulzy-prod-9545d",
+    "dev" : "haulzy-dev"
   }
 }

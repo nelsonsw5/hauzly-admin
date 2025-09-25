@@ -12,7 +12,8 @@ import Dashboard from './Dashboard.jsx'
 import { AuthProvider, ProtectedRoute, AdminRoute } from './AuthContext.jsx'
 import Returns from './Returns.jsx'
 import Users from './Users.jsx'
-import Purchase from './Purchase.jsx'
+import Download from './Download.jsx'
+import SuccessPage from './SuccessPage.jsx'
 
 const router = createBrowserRouter([
   {
@@ -22,24 +23,25 @@ const router = createBrowserRouter([
       { index: true, element: <LandingPage /> },
       { path: 'login', element: <Login /> },
       { path: 'signup', element: <SignUp /> },
+      { path: 'success', element: <SuccessPage /> },
       { path: 'privacy', element: <PrivacyPolicy /> },
       { path: 'terms', element: <Terms /> },
+      { path: 'download', element: <Download /> },
       { path: 'dashboard', element: (
-        <ProtectedRoute>
+        <AdminRoute>
           <Dashboard />
-        </ProtectedRoute>
+        </AdminRoute>
       ) },
       { path: 'returns', element: (
-        <ProtectedRoute>
+        <AdminRoute>
           <Returns />
-        </ProtectedRoute>
+        </AdminRoute>
       ) },
       { path: 'users', element: (
         <AdminRoute>
           <Users />
         </AdminRoute>
       ) },
-      { path: 'purchase', element: <Purchase /> },
     ],
   },
 ])

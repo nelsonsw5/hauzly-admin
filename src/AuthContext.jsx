@@ -6,7 +6,6 @@ import { auth, db } from './firebase'
 
 const AuthContext = createContext({ 
   user: null, 
-  userRole: null,
   isAdmin: false,
   loading: true, 
   logout: async () => {} 
@@ -14,7 +13,7 @@ const AuthContext = createContext({
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
-  const [userRole, setUserRole] = useState(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -22,21 +21,21 @@ export function AuthProvider({ children }) {
       setUser(nextUser)
       
       if (nextUser) {
-        // Fetch user role from Firestore
+        // Fetch user data from Firestore
         try {
           const userDoc = await getDoc(doc(db, 'users', nextUser.uid))
           if (userDoc.exists()) {
             const userData = userDoc.data()
-            setUserRole(userData.role || 'user')
+            setIsAdmin(userData.isAdmin === true)
           } else {
-            setUserRole('user')
+            setIsAdmin(false)
           }
         } catch (error) {
-          console.error('Error fetching user role:', error)
-          setUserRole('user')
+          console.error('Error fetching user data:', error)
+          setIsAdmin(false)
         }
       } else {
-        setUserRole(null)
+        setIsAdmin(false)
       }
       
       setLoading(false)
@@ -44,17 +43,14 @@ export function AuthProvider({ children }) {
     return () => unsub()
   }, [])
 
-  const isAdmin = userRole === 'admin'
-
   const value = useMemo(() => ({
     user,
-    userRole,
     isAdmin,
     loading,
     logout: async () => {
       await signOut(auth)
     },
-  }), [user, userRole, isAdmin, loading])
+  }), [user, isAdmin, loading])
 
   return (
     <AuthContext.Provider value={value}>

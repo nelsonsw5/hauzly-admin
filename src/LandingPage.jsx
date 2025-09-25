@@ -10,8 +10,8 @@ import pickupImage from './assets/pickup-phone.png'
 function LandingPage() {
   const navigate = useNavigate()
 
-  const handlePurchase = (plan) => {
-    navigate('/purchase', { state: { plan } })
+  const handleSignup = (plan) => {
+    navigate('/signup', { state: { plan } })
   }
   return (
     <main className="main-content">
@@ -34,7 +34,7 @@ function LandingPage() {
         >
           <button
             className="cta-primary"
-            onClick={() => handlePurchase('onetime')}
+            onClick={() => handleSignup('onetime')}
           >
             Try it out
           </button>
@@ -147,7 +147,8 @@ function LandingPage() {
       <section id="pricing" style={{ padding: '4rem 0', backgroundColor: 'white', margin: '2rem 0', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
         <div style={{ padding: '0 2rem' }}>
           <h2 style={{ textAlign: 'center', marginBottom: '3rem', color: 'var(--secondary-color)' }}>Simple, Transparent Pricing</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+          {/* Top row - Three main plans */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', maxWidth: '1200px', margin: '0 auto', marginBottom: '3rem' }}>
             
             {/* One-Time Haul */}
             <div style={{ 
@@ -160,7 +161,7 @@ function LandingPage() {
             }}>
               <h3 style={{ color: 'var(--secondary-color)', marginBottom: '1rem' }}>One-Time Haul</h3>
               <div style={{ marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>$5.00</span>
+                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>$4.99</span>
                 <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>per haul</span>
               </div>
               <div style={{ marginBottom: '2rem' }}>
@@ -172,7 +173,7 @@ function LandingPage() {
                 </div> */}
               </div>
               <button 
-                onClick={() => handlePurchase('onetime')}
+                onClick={() => handleSignup('onetime')}
                 style={{
                   backgroundColor: 'var(--primary-color)',
                   color: 'white',
@@ -216,12 +217,12 @@ function LandingPage() {
               </div>
               <h3 style={{ color: 'var(--secondary-color)', marginBottom: '1rem' }}>Basic</h3>
               <div style={{ marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>$8.00</span>
+                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>$7.99</span>
                 <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>/month</span>
               </div>
               <div style={{ marginBottom: '1rem', color: 'var(--accent-color)', fontSize: '0.9rem' }}>
                 <span style={{ textDecoration: 'line-through', opacity: '0.7' }}>$96.00</span>
-                <span style={{ marginLeft: '0.5rem', color: 'var(--primary-color)', fontWeight: '600' }}>$86.40/year (10% off)</span>
+                <span style={{ marginLeft: '0.5rem', color: 'var(--primary-color)', fontWeight: '600' }}>$86.99/year</span>
               </div>
               <div style={{ marginBottom: '2rem' }}>
                 <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
@@ -232,7 +233,7 @@ function LandingPage() {
                 </div> */}
               </div>
               <button 
-                onClick={() => handlePurchase('basic')}
+                onClick={() => handleSignup('basic')}
                 style={{
                   backgroundColor: 'var(--primary-color)',
                   color: 'white',
@@ -260,12 +261,12 @@ function LandingPage() {
             }}>
               <h3 style={{ color: 'var(--secondary-color)', marginBottom: '1rem' }}>Premium</h3>
               <div style={{ marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>$15.00</span>
+                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>$14.99</span>
                 <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>/month</span>
               </div>
               <div style={{ marginBottom: '1rem', color: 'var(--accent-color)', fontSize: '0.9rem' }}>
                 <span style={{ textDecoration: 'line-through', opacity: '0.7' }}>$180.00</span>
-                <span style={{ marginLeft: '0.5rem', color: 'var(--primary-color)', fontWeight: '600' }}>$162.00/year (10% off)</span>
+                <span style={{ marginLeft: '0.5rem', color: 'var(--primary-color)', fontWeight: '600' }}>$161.99/year</span>
               </div>
               <div style={{ marginBottom: '2rem' }}>
                 <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
@@ -276,7 +277,7 @@ function LandingPage() {
                 </div> */}
               </div>
               <button 
-                onClick={() => handlePurchase('premium')}
+                onClick={() => handleSignup('premium')}
                 style={{
                   backgroundColor: 'var(--primary-color)',
                   color: 'white',
@@ -292,7 +293,69 @@ function LandingPage() {
                 Go Premium
               </button>
             </div>
+          </div>
 
+          {/* Bottom row - Family plan centered */}
+          <div style={{ display: 'flex', justifyContent: 'center', maxWidth: '1200px', margin: '0 auto' }}>
+            {/* Family */}
+            <div style={{ 
+              backgroundColor: 'white', 
+              padding: '2rem', 
+              borderRadius: '12px', 
+              border: '2px solid var(--secondary-color)',
+              textAlign: 'center',
+              position: 'relative',
+              maxWidth: '320px',
+              width: '100%',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
+            }}>
+              <div style={{ 
+                position: 'absolute', 
+                top: '-12px', 
+                left: '50%', 
+                transform: 'translateX(-50%)',
+                backgroundColor: 'var(--secondary-color)',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '20px',
+                fontSize: '0.9rem',
+                fontWeight: '600'
+              }}>
+                Best Value
+              </div>
+              <h3 style={{ color: 'var(--secondary-color)', marginBottom: '1rem' }}>Family</h3>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>$154.99</span>
+                <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>/year</span>
+              </div>
+              <div style={{ marginBottom: '1rem', color: 'var(--accent-color)', fontSize: '0.9rem' }}>
+                <span style={{ color: 'var(--primary-color)', fontWeight: '600' }}>*only for yearly subscriptions</span>
+              </div>
+              <div style={{ marginBottom: '2rem' }}>
+                <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
+                  <strong>Up to 6 people</strong>
+                </div>
+                <div style={{ color: 'var(--accent-color)' }}>
+                  <strong>Unlimited pickups</strong>
+                </div>
+              </div>
+              <button 
+                onClick={() => handleSignup('family')}
+                style={{
+                  backgroundColor: 'var(--primary-color)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  width: '100%'
+                }}
+              >
+                Choose Family
+              </button>
+            </div>
           </div>
         </div>
       </section>
