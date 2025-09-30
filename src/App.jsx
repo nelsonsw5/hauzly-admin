@@ -2,6 +2,8 @@ import { useEffect } from 'react'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import './App.css'
 import haulzyLogo from './assets/Haulzy-H-Circle.PNG'
+import instaIcon from './assets/insta-icon.png'
+import facebookIcon from './assets/facebook-icon.png'
 import Navigation from './components/Navigation'
 
 function App() {
@@ -31,17 +33,11 @@ function App() {
               Simplifying package management for busy lives
             </p>
             <div className="social-links">
-              <a href="#" className="social-link" aria-label="Facebook">
-                <span>📘</span>
+              <a href="https://www.facebook.com/profile.php?id=61580815265905" className="social-link" aria-label="Facebook" target="_blank" rel="noopener noreferrer">
+                <img src={facebookIcon} alt="Facebook" className="social-icon" />
               </a>
-              <a href="#" className="social-link" aria-label="Twitter">
-                <span>🐦</span>
-              </a>
-              <a href="#" className="social-link" aria-label="Instagram">
-                <span>📷</span>
-              </a>
-              <a href="#" className="social-link" aria-label="LinkedIn">
-                <span>💼</span>
+              <a href="https://www.instagram.com/haulzy_app/" className="social-link" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
+                <img src={instaIcon} alt="Instagram" className="social-icon" />
               </a>
             </div>
           </div>
@@ -73,7 +69,7 @@ function App() {
                   Returns Management
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link 
                   to="/" 
                   onClick={(e) => {
@@ -84,7 +80,7 @@ function App() {
                 >
                   Delivery Service
                 </Link>
-              </li>
+              </li> */}
             </ul>
           </div>
 

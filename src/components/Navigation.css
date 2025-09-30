@@ -376,18 +376,26 @@
   }
 }
 
-/* Dark mode support */
+/* Dark mode support - Override to keep navigation light */
 @media (prefers-color-scheme: dark) {
   .navigation-header {
-    background-color: #2d2d2d;
+    background-color: var(--text-light) !important; /* Force light background */
   }
   
   .nav-menu {
-    background-color: #2d2d2d;
+    background-color: var(--text-light) !important; /* Force light background for mobile menu */
   }
   
   .nav-link {
-    color: #ffffff;
+    color: var(--secondary-color) !important; /* Force dark text on light background */
+  }
+  
+  .hamburger-line {
+    background-color: var(--secondary-color) !important; /* Force dark hamburger lines */
+  }
+  
+  .hamburger-menu.active .hamburger-line {
+    background-color: var(--secondary-color) !important; /* Force dark hamburger lines when active */
   }
 }
 

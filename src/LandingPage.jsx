@@ -9,6 +9,9 @@ import pickupImage from './assets/pickup-phone.png'
 
 function LandingPage() {
   const navigate = useNavigate()
+  
+  // Toggle to show/hide Family plan - set to false to hide it
+  const showFamilyPlan = false
 
   const handleSignup = (plan) => {
     navigate('/signup', { state: { plan } })
@@ -296,67 +299,69 @@ function LandingPage() {
           </div>
 
           {/* Bottom row - Family plan centered */}
-          <div style={{ display: 'flex', justifyContent: 'center', maxWidth: '1200px', margin: '0 auto' }}>
-            {/* Family */}
-            <div style={{ 
-              backgroundColor: 'white', 
-              padding: '2rem', 
-              borderRadius: '12px', 
-              border: '2px solid var(--secondary-color)',
-              textAlign: 'center',
-              position: 'relative',
-              maxWidth: '320px',
-              width: '100%',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
-            }}>
+          {showFamilyPlan && (
+            <div style={{ display: 'flex', justifyContent: 'center', maxWidth: '1200px', margin: '0 auto' }}>
+              {/* Family */}
               <div style={{ 
-                position: 'absolute', 
-                top: '-12px', 
-                left: '50%', 
-                transform: 'translateX(-50%)',
-                backgroundColor: 'var(--secondary-color)',
-                color: 'white',
-                padding: '0.5rem 1rem',
-                borderRadius: '20px',
-                fontSize: '0.9rem',
-                fontWeight: '600'
+                backgroundColor: 'white', 
+                padding: '2rem', 
+                borderRadius: '12px', 
+                border: '2px solid var(--secondary-color)',
+                textAlign: 'center',
+                position: 'relative',
+                maxWidth: '320px',
+                width: '100%',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
               }}>
-                Best Value
-              </div>
-              <h3 style={{ color: 'var(--secondary-color)', marginBottom: '1rem' }}>Family</h3>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>$154.99</span>
-                <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>/year</span>
-              </div>
-              <div style={{ marginBottom: '1rem', color: 'var(--accent-color)', fontSize: '0.9rem' }}>
-                <span style={{ color: 'var(--primary-color)', fontWeight: '600' }}>*only for yearly subscriptions</span>
-              </div>
-              <div style={{ marginBottom: '2rem' }}>
-                <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
-                  <strong>Up to 6 people</strong>
-                </div>
-                <div style={{ color: 'var(--accent-color)' }}>
-                  <strong>Unlimited pickups</strong>
-                </div>
-              </div>
-              <button 
-                onClick={() => handleSignup('family')}
-                style={{
-                  backgroundColor: 'var(--primary-color)',
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '-12px', 
+                  left: '50%', 
+                  transform: 'translateX(-50%)',
+                  backgroundColor: 'var(--secondary-color)',
                   color: 'white',
-                  border: 'none',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  width: '100%'
-                }}
-              >
-                Choose Family
-              </button>
+                  padding: '0.5rem 1rem',
+                  borderRadius: '20px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600'
+                }}>
+                  Best Value
+                </div>
+                <h3 style={{ color: 'var(--secondary-color)', marginBottom: '1rem' }}>Family</h3>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>$154.99</span>
+                  <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>/year</span>
+                </div>
+                <div style={{ marginBottom: '1rem', color: 'var(--accent-color)', fontSize: '0.9rem' }}>
+                  <span style={{ color: 'var(--primary-color)', fontWeight: '600' }}>*only for yearly subscriptions</span>
+                </div>
+                <div style={{ marginBottom: '2rem' }}>
+                  <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
+                    <strong>Up to 6 people</strong>
+                  </div>
+                  <div style={{ color: 'var(--accent-color)' }}>
+                    <strong>Unlimited pickups</strong>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => handleSignup('family')}
+                  style={{
+                    backgroundColor: 'var(--primary-color)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    width: '100%'
+                  }}
+                >
+                  Choose Family
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 

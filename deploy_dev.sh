@@ -14,6 +14,10 @@ if [ ! -f ".env.dev" ]; then
     exit 1
 fi
 
+# Remove existing .env if it exists
+echo "🧹 Removing any existing .env file..."
+rm -f .env
+
 # Copy .env.dev to .env
 echo "📋 Copying environment variables from .env.dev to .env..."
 cp .env.dev .env

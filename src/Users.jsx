@@ -86,23 +86,45 @@ function Users() {
 
   async function toggleUserRole(user) {
     try {
-      const newRole = user.role === 'admin' ? 'user' : 'admin'
+      const newIsAdmin = !user.isAdmin;
       await updateDoc(doc(db, 'users', user.id), {
-        role: newRole
-      })
+        isAdmin: newIsAdmin
+      });
       
       // Update local state
       setUsers(users.map(u => 
-        u.id === user.id ? { ...u, role: newRole } : u
-      ))
+        u.id === user.id ? { ...u, isAdmin: newIsAdmin } : u
+      ));
       
       // Update selected user if it's the same
       if (selectedUser && selectedUser.id === user.id) {
-        setSelectedUser({ ...selectedUser, role: newRole })
+        setSelectedUser({ ...selectedUser, isAdmin: newIsAdmin });
       }
     } catch (err) {
-      console.error('Error updating user role:', err)
-      alert('Failed to update user role')
+      console.error('Error updating user role:', err);
+      alert('Failed to update user role');
+    }
+  }
+
+  async function toggleApproval(user) {
+    try {
+      const newApproved = !user.approved;
+      await updateDoc(doc(db, 'users', user.id), {
+        approved: newApproved
+      });
+      
+      // Update local state
+      setUsers(users.map(u => 
+        u.id === user.id ? { ...u, approved: newApproved } : u
+      ));
+      
+      // Update selected user if it's the same
+      if (selectedUser && selectedUser.id === user.id) {
+        setSelectedUser({ ...selectedUser, approved: newApproved });
+      }
+    } catch (err) {
+      console.error('Error updating user approval status:', err);
+      alert('Failed to update user approval status');
     }
   }
 
@@ -115,14 +137,30 @@ function Users() {
     }).format(d)
   }
 
+  function formatPhoneNumber(phoneNumber) {
+    if (!phoneNumber) return 'No Phone'
+    const cleaned = ('' + phoneNumber).replace(/\D/g, '')
+    const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/)
+    if (match) {
+      return `${match[1]}-${match[2]}-${match[3]}`
+    }
+    return phoneNumber
+  }
+
   // Filter users based on search term and role
   const filteredUsers = users.filter(user => {
     const matchesSearch = !searchTerm || 
       user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.uid?.toLowerCase().includes(searchTerm.toLowerCase())
     
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter
+    const matchesRole = roleFilter === 'all' || 
+      (roleFilter === 'admin' && user.isAdmin) ||
+      (roleFilter === 'customer' && user.type === 'customer') ||
+      (roleFilter === 'driver' && user.type === 'driver') ||
+      (roleFilter === 'approved' && user.approved === true) ||
+      (roleFilter === 'pending' && user.approved === false)
     
     return matchesSearch && matchesRole
   })
@@ -188,9 +226,12 @@ function Users() {
                 boxSizing: 'border-box'
               }}
             >
-              <option value="all">All Roles</option>
+              <option value="all">All Users</option>
               <option value="admin">Admins</option>
-              <option value="user">Users</option>
+              <option value="customer">Customers</option>
+              <option value="driver">Drivers</option>
+              <option value="approved">Approved</option>
+              <option value="pending">Pending Approval</option>
             </select>
           </div>
           <div style={{ 
@@ -263,49 +304,68 @@ function Users() {
                         fontSize: '1.1rem',
                         fontWeight: '600'
                       }}>
-                        {user.displayName || 'No Name'}
+                        {user.firstName} {user.lastName || 'No Name'}
                       </h3>
-                      <span style={{
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '4px',
-                        fontSize: '0.75rem',
-                        fontWeight: '600',
-                        backgroundColor: user.role === 'admin' ? 'var(--primary-color)' : '#6b7280',
-                        color: 'white'
-                      }}>
-                        {user.role || 'user'}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          backgroundColor: '#6b7280',
+                          color: 'white'
+                        }}>
+                          {user.type}
+                        </span>
+                        {user.isAdmin && (
+                          <span style={{
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            backgroundColor: 'var(--primary-color)',
+                            color: 'white'
+                          }}>
+                            Admin
+                          </span>
+                        )}
+                        <span style={{
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          backgroundColor: user.approved ? '#10b981' : '#f59e0b',
+                          color: 'white'
+                        }}>
+                          {user.approved ? 'Approved' : 'Pending'}
+                        </span>
+                      </div>
                     </div>
                     <div style={{ color: 'var(--accent-color)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
                       {user.email}
                     </div>
                     <div style={{ color: '#6b7280', fontSize: '0.8rem' }}>
-                      ID: {user.uid || user.id}
+                      Phone: {formatPhoneNumber(user.phoneNumber) || 'No Phone'}
+                      {user.receiveTextUpdates && ' (Texts Enabled)'}
+                    </div>
+                    <div style={{ color: '#6b7280', fontSize: '0.8rem' }}>
+                      {user.streetAddress ? (
+                        <>
+                          {user.streetAddress}<br />
+                          {user.city}, {user.state} {user.zip}
+                        </>
+                      ) : 'No Address'}
                     </div>
                     <div style={{ color: '#6b7280', fontSize: '0.8rem' }}>
                       Created: {formatDate(user.createdAt)}
                     </div>
+                    {user.lastLoginAt && (
+                      <div style={{ color: '#6b7280', fontSize: '0.8rem' }}>
+                        Last Login: {formatDate(user.lastLoginAt)}
+                      </div>
+                    )}
                   </div>
                   <div className="users-item-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        toggleUserRole(user)
-                      }}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        backgroundColor: user.role === 'admin' ? '#dc2626' : 'var(--primary-color)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        fontSize: '0.8rem',
-                        cursor: 'pointer',
-                        minHeight: '32px',
-                        minWidth: '80px'
-                      }}
-                    >
-                      {user.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
-                    </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
@@ -377,33 +437,48 @@ function Users() {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={{ fontWeight: '600', color: 'black', display: 'block', marginBottom: '0.25rem' }}>Name:</label>
-                <div style={{ color: 'var(--accent-color)' }}>{selectedUser.displayName || 'No Name'}</div>
+                <label style={{ fontWeight: '600', color: 'black', display: 'block', marginBottom: '0.25rem' }}>First Name:</label>
+                <div style={{ color: 'var(--accent-color)' }}>{selectedUser.firstName || 'Not provided'}</div>
+              </div>
+              
+              <div>
+                <label style={{ fontWeight: '600', color: 'black', display: 'block', marginBottom: '0.25rem' }}>Last Name:</label>
+                <div style={{ color: 'var(--accent-color)' }}>{selectedUser.lastName || 'Not provided'}</div>
               </div>
               
               <div>
                 <label style={{ fontWeight: '600', color: 'black', display: 'block', marginBottom: '0.25rem' }}>Email:</label>
                 <div style={{ color: 'var(--accent-color)' }}>{selectedUser.email}</div>
               </div>
+
+              <div>
+                <label style={{ fontWeight: '600', color: 'black', display: 'block', marginBottom: '0.25rem' }}>Phone:</label>
+                <div style={{ color: 'var(--accent-color)' }}>{selectedUser.phone || 'Not provided'}</div>
+              </div>
+
+              <div>
+                <label style={{ fontWeight: '600', color: 'black', display: 'block', marginBottom: '0.25rem' }}>Address:</label>
+                <div style={{ color: 'var(--accent-color)' }}>{selectedUser.address || 'Not provided'}</div>
+              </div>
               
               <div>
-                <label style={{ fontWeight: '600', color: 'black', display: 'block', marginBottom: '0.25rem' }}>Role:</label>
+                <label style={{ fontWeight: '600', color: 'black', display: 'block', marginBottom: '0.25rem' }}>Status:</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span style={{
                     padding: '0.25rem 0.5rem',
                     borderRadius: '4px',
                     fontSize: '0.8rem',
                     fontWeight: '600',
-                    backgroundColor: selectedUser.role === 'admin' ? 'var(--primary-color)' : '#6b7280',
+                    backgroundColor: selectedUser.approved ? '#10b981' : '#f59e0b',
                     color: 'white'
                   }}>
-                    {selectedUser.role || 'user'}
+                    {selectedUser.approved ? 'Approved' : 'Pending'}
                   </span>
                   <button
-                    onClick={() => toggleUserRole(selectedUser)}
+                    onClick={() => toggleApproval(selectedUser)}
                     style={{
                       padding: '0.25rem 0.5rem',
-                      backgroundColor: selectedUser.role === 'admin' ? '#dc2626' : 'var(--primary-color)',
+                      backgroundColor: selectedUser.approved ? '#f59e0b' : '#10b981',
                       color: 'white',
                       border: 'none',
                       borderRadius: '4px',
@@ -411,8 +486,40 @@ function Users() {
                       cursor: 'pointer'
                     }}
                   >
-                    {selectedUser.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
+                    {selectedUser.approved ? 'Set Pending' : 'Approve'}
                   </button>
+                </div>
+              </div>
+              
+              <div>
+                <label style={{ fontWeight: '600', color: 'black', display: 'block', marginBottom: '0.25rem' }}>Admin Status:</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '4px',
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    backgroundColor: selectedUser.isAdmin ? 'var(--primary-color)' : '#6b7280',
+                    color: 'white'
+                  }}>
+                    {selectedUser.isAdmin ? 'Admin' : selectedUser.type || 'User'}
+                  </span>
+                  {!selectedUser.isAdmin && (
+                    <button
+                      onClick={() => toggleUserRole(selectedUser)}
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        backgroundColor: 'var(--primary-color)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Make Admin
+                    </button>
+                  )}
                 </div>
               </div>
               
@@ -442,22 +549,24 @@ function Users() {
               marginTop: '2rem',
               flexWrap: 'wrap'
             }}>
-              <button
-                onClick={() => toggleUserRole(selectedUser)}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: selectedUser.role === 'admin' ? '#dc2626' : 'var(--primary-color)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '1rem',
-                  cursor: 'pointer',
-                  minHeight: '44px',
-                  flex: '1 1 auto'
-                }}
-              >
-                {selectedUser.role === 'admin' ? 'Remove Admin Access' : 'Grant Admin Access'}
-              </button>
+              {!selectedUser.isAdmin && (
+                <button
+                  onClick={() => toggleUserRole(selectedUser)}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: 'var(--primary-color)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '1rem',
+                    cursor: 'pointer',
+                    minHeight: '44px',
+                    flex: '1 1 auto'
+                  }}
+                >
+                  Grant Admin Access
+                </button>
+              )}
               <button
                 onClick={() => {
                   closeUserModal()

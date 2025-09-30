@@ -14,6 +14,10 @@ if [ ! -f ".env.prod" ]; then
     exit 1
 fi
 
+# Remove existing .env if it exists
+echo "🧹 Removing any existing .env file..."
+rm -f .env
+
 # Copy .env.prod to .env
 echo "📋 Copying environment variables from .env.prod to .env..."
 cp .env.prod .env

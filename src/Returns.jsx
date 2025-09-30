@@ -126,6 +126,12 @@ function Returns() {
   
   // Add QR code modal state
   const [qrCodeModal, setQrCodeModal] = useState(null)
+  
+  // Add state to track if we should show action popup after QR code modal closes
+  const [showActionPopupAfterQR, setShowActionPopupAfterQR] = useState(null)
+  
+  // Add loading state for item status updates
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -337,6 +343,7 @@ function Returns() {
   }
 
   async function handleConfirmation() {
+    setIsUpdatingStatus(true)
     try {
       // Map the action to the correct status for the function
       const scanStatus = confirmationAction === 'could_not_be_scanned' ? 'Could not be scanned' : 'Scanned'
@@ -370,6 +377,8 @@ function Returns() {
     } catch (err) {
       console.error('Error calling scan_in_item:', err)
       alert(err?.message || 'Failed to process item')
+    } finally {
+      setIsUpdatingStatus(false)
     }
   }
 
@@ -378,12 +387,27 @@ function Returns() {
     setConfirmationAction('')
   }
 
-  function handleQrCodeClick(qrCodeUrl, itemName) {
-    setQrCodeModal({ url: qrCodeUrl, itemName })
+  function handleQrCodeClick(qrCodeUrl, itemName, item) {
+    setQrCodeModal({ url: qrCodeUrl, itemName, item })
   }
 
   function closeQrCodeModal() {
+    // Store the item for the action popup if the item is not already processed
+    if (qrCodeModal?.item && qrCodeModal.item.status !== 'Rejected' && qrCodeModal.item.status !== 'Scanned') {
+      setShowActionPopupAfterQR(qrCodeModal.item)
+    }
     setQrCodeModal(null)
+  }
+
+  function handleActionAfterQR(action) {
+    if (showActionPopupAfterQR) {
+      handleButtonClick(showActionPopupAfterQR, action)
+    }
+    setShowActionPopupAfterQR(null)
+  }
+
+  function cancelActionAfterQR() {
+    setShowActionPopupAfterQR(null)
   }
 
   return (
@@ -552,7 +576,7 @@ function Returns() {
                                     }}
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleQrCodeClick(item.qrCode?.url || item.qr_code?.url, item.name || item.itemDescription);
+                                      handleQrCodeClick(item.qrCode?.url || item.qr_code?.url, item.name || item.itemDescription, item);
                                     }}
                                     onMouseEnter={(e) => {
                                       e.target.style.transform = 'scale(1.05)';
@@ -727,7 +751,7 @@ function Returns() {
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleQrCodeClick(selectedItem.qrCode?.url || selectedItem.qr_code?.url, selectedItem.name || selectedItem.itemDescription);
+                          handleQrCodeClick(selectedItem.qrCode?.url || selectedItem.qr_code?.url, selectedItem.name || selectedItem.itemDescription, selectedItem);
                         }}
                         onMouseEnter={(e) => {
                           e.target.style.transform = 'scale(1.05)';
@@ -1023,6 +1047,172 @@ function Returns() {
           </div>
         </div>
       )}
+
+      {/* Action Selection Modal after QR Code */}
+      {showActionPopupAfterQR && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1003,
+          padding: '1rem'
+        }} onClick={cancelActionAfterQR}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '2rem',
+            maxWidth: '400px',
+            width: '100%',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ color: 'black', marginBottom: '1rem', fontSize: '1.5rem', textAlign: 'center' }}>
+              Select Action
+            </h2>
+            
+            <p style={{ color: 'black', marginBottom: '1.5rem', fontSize: '1rem', textAlign: 'center' }}>
+              What would you like to do with this item?
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <button
+                onClick={() => handleActionAfterQR('could_not_be_scanned')}
+                style={{
+                  padding: '1rem 1.5rem',
+                  border: 'none',
+                  borderRadius: '6px',
+                  background: '#dc2626',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  transition: 'background-color 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#b91c1c';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#dc2626';
+                }}
+              >
+                Could Not Be Scanned
+              </button>
+              
+              <button
+                onClick={() => handleActionAfterQR('returned')}
+                style={{
+                  padding: '1rem 1.5rem',
+                  border: 'none',
+                  borderRadius: '6px',
+                  background: 'var(--primary-color)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  transition: 'background-color 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#00a396';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = 'var(--primary-color)';
+                }}
+              >
+                Mark Returned
+              </button>
+              
+              <button
+                onClick={cancelActionAfterQR}
+                style={{
+                  padding: '1rem 1.5rem',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '6px',
+                  background: 'white',
+                  color: 'black',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  transition: 'background-color 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#f8fafc';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = 'white';
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Modal for Status Updates */}
+      {isUpdatingStatus && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1004,
+          padding: '1rem'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '3rem 2rem',
+            maxWidth: '350px',
+            width: '100%',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: '1.5rem'
+            }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                border: '4px solid #f3f4f6',
+                borderTop: '4px solid var(--primary-color)',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }}></div>
+            </div>
+            
+            <h2 style={{ 
+              color: 'black', 
+              marginBottom: '0.5rem', 
+              fontSize: '1.25rem',
+              fontWeight: '600'
+            }}>
+              Updating Item Status
+            </h2>
+            
+            <p style={{ 
+              color: '#666', 
+              fontSize: '0.95rem', 
+              margin: 0,
+              lineHeight: '1.5'
+            }}>
+              Please wait while we process your request...
+            </p>
+          </div>
+        </div>
+      )}
+
     </main>
   )
 }

@@ -4,7 +4,6 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
 import { doc, setDoc } from 'firebase/firestore'
 import { auth, db } from './firebase'
 import './App.css'
-import { getFunctions, httpsCallable } from 'firebase/functions'
 import { fetchSignInMethodsForEmail } from 'firebase/auth'
 import { getDoc } from 'firebase/firestore'
 
@@ -42,9 +41,57 @@ const oneTimePlan = {
   features: ['Pay per haul'],
 }
 
-const functions = getFunctions()
-const purchaseSingleHaul = httpsCallable(functions, 'purchase_single_haul')
-const purchaseSubscription = httpsCallable(functions, 'purchase_subscription')
+// Firebase Cloud Function URLs
+const FIREBASE_FUNCTIONS_BASE_URL = 'https://us-central1-haulzy-dev.cloudfunctions.net'
+
+// Helper function to call Firebase Cloud Functions via fetch
+async function callCloudFunction(functionName, data) {
+  const url = `${FIREBASE_FUNCTIONS_BASE_URL}/${functionName}`
+  
+  console.log(`SignUp: Calling ${functionName} at URL:`, url)
+  console.log(`SignUp: Request payload for ${functionName}:`, data)
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ data })
+    })
+    
+    console.log(`SignUp: ${functionName} response status:`, response.status)
+    console.log(`SignUp: ${functionName} response headers:`, Object.fromEntries(response.headers.entries()))
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`SignUp: ${functionName} HTTP error:`, {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      })
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+    
+    const result = await response.json()
+    console.log(`SignUp: ${functionName} successful response:`, result)
+    
+    return result
+  } catch (error) {
+    console.error(`SignUp: ${functionName} fetch error:`, error)
+    throw error
+  }
+}
+
+// Wrapper functions for the specific Cloud Functions
+async function purchaseSingleHaul(data) {
+  return await callCloudFunction('purchase_single_haul', data)
+}
+
+async function purchaseSubscription(data) {
+  return await callCloudFunction('purchase_subscription', data)
+}
 
 function SignUp() {
   const navigate = useNavigate()
@@ -54,7 +101,17 @@ function SignUp() {
     window.scrollTo(0, 0)
   }, [])
 
-  const [selectedPlan, setSelectedPlan] = useState(location.state?.selectedPlan || 'basic')
+  // Toggle to show/hide Family plan - set to false to hide it
+  const showFamilyPlan = false
+
+  const [selectedPlan, setSelectedPlan] = useState(() => {
+    const planFromState = location.state?.selectedPlan || 'basic'
+    // If family plan is disabled and someone tries to access it, default to basic
+    if (planFromState === 'family' && !showFamilyPlan) {
+      return 'basic'
+    }
+    return planFromState
+  })
   const [planType, setPlanType] = useState(location.state?.selectedPlan === 'onetime' ? 'onetime' : 'subscription') // 'subscription' | 'onetime'
   const [billingCycle, setBillingCycle] = useState('yearly') // 'monthly' | 'yearly'
 
@@ -106,10 +163,16 @@ function SignUp() {
     e.preventDefault();
     setError('');
   
-    console.log('SignUp: handleSubmit started');
+    console.log('=== SignUp: handleSubmit started ===');
+    console.log('SignUp: Timestamp:', new Date().toISOString());
     console.log('SignUp: Form data:', {
       firstName, lastName, email, phoneNumber, streetAddress, city, state, zip,
-      selectedPlan, planType, billingCycle
+      selectedPlan, planType, billingCycle, receiveTextUpdates
+    });
+    console.log('SignUp: Password fields populated:', {
+      hasPassword: !!password,
+      hasConfirmPassword: !!confirmPassword,
+      passwordsMatch: password === confirmPassword
     });
   
     if (password !== confirmPassword) {
@@ -118,28 +181,37 @@ function SignUp() {
       return;
     }
   
+    console.log('SignUp: Setting submitting to true');
     setSubmitting(true);
   
     try {
       // 1) Check if user exists
-      console.log('SignUp: Checking if user exists for email:', email);
+      console.log('=== SignUp: Step 1 - Checking if user exists ===');
+      console.log('SignUp: Checking email:', email);
+      console.log('SignUp: Auth object:', auth);
+      
       const signInMethods = await fetchSignInMethodsForEmail(auth, email);
       console.log('SignUp: Sign in methods found:', signInMethods);
+      console.log('SignUp: Number of existing sign-in methods:', signInMethods.length);
+      
       if (signInMethods.length > 0) {
-        console.log('SignUp: User already exists');
+        console.log('SignUp: User already exists - aborting signup');
         setError('An account with this email already exists. Please sign in instead.');
         return;
       }
+      console.log('SignUp: Email is available - proceeding with signup');
   
       // 2) Prepare payment data
-      console.log('SignUp: Preparing payment data');
+      console.log('=== SignUp: Step 2 - Preparing payment data ===');
       const displayPrice = getDisplayPrice(selectedPlan);
       const currentPlan = planType === 'onetime' ? oneTimePlan : subscriptionPlans[selectedPlan];
       const actualBillingCycle = planType === 'onetime' ? 'onetime' : billingCycle;
+      const priceId = getPriceId(selectedPlan, actualBillingCycle);
   
-      console.log('SignUp: Display price:', displayPrice);
-      console.log('SignUp: Current plan:', currentPlan);
+      console.log('SignUp: Display price calculation result:', displayPrice);
+      console.log('SignUp: Current plan object:', currentPlan);
       console.log('SignUp: Actual billing cycle:', actualBillingCycle);
+      console.log('SignUp: Price ID for Stripe:', priceId);
   
       const customerData = {
         email,
@@ -160,68 +232,162 @@ function SignUp() {
         yearlyDiscount: currentPlan.yearlyDiscount,
       };
   
-      console.log('SignUp: Customer data:', customerData);
-      console.log('SignUp: Plan data:', planData);
+      console.log('SignUp: Customer data prepared:', customerData);
+      console.log('SignUp: Plan data prepared:', planData);
+      console.log('SignUp: Phone number cleaned:', phoneNumber, '->', phoneNumber.replace(/\D/g, ''));
   
       // 3) Create Checkout Session via your backend
+      console.log('=== SignUp: Step 3 - Creating Checkout Session ===');
       let paymentResult;
+      
       if (planType === 'onetime') {
-        console.log('SignUp: Processing one-time payment (Checkout)');
-        paymentResult = await purchaseSingleHaul({
+        console.log('SignUp: Processing one-time payment via purchaseSingleHaul');
+        const amount = Math.round(parseFloat(displayPrice.amount.replace('$', '')) * 100);
+        console.log('SignUp: One-time amount calculation:', displayPrice.amount, '->', amount, 'cents');
+        
+        const singleHaulPayload = {
           customer: customerData,
           plan: planData,
-          amount: Math.round(parseFloat(displayPrice.amount.replace('$', '')) * 100),
-        });
+          amount: amount,
+        };
+        console.log('SignUp: purchaseSingleHaul payload:', singleHaulPayload);
+        
+        try {
+          console.log('SignUp: Calling purchaseSingleHaul function...');
+          paymentResult = await purchaseSingleHaul(singleHaulPayload);
+          console.log('SignUp: purchaseSingleHaul completed successfully');
+        } catch (singleHaulError) {
+          console.error('SignUp: purchaseSingleHaul failed:', singleHaulError);
+          console.error('SignUp: purchaseSingleHaul error details:', {
+            message: singleHaulError.message,
+            code: singleHaulError.code,
+            details: singleHaulError.details,
+            stack: singleHaulError.stack
+          });
+          throw singleHaulError;
+        }
       } else {
-        console.log('SignUp: Processing subscription payment (Checkout)');
-        paymentResult = await purchaseSubscription({
+        console.log('SignUp: Processing subscription payment via purchaseSubscription');
+        
+        const subscriptionPayload = {
           customer: customerData,
           plan: planData,
-          priceId: getPriceId(selectedPlan, actualBillingCycle),
+          priceId: priceId,
           billingCycle: actualBillingCycle,
+        };
+        console.log('SignUp: purchaseSubscription payload:', subscriptionPayload);
+        console.log('SignUp: Subscription details:', {
+          selectedPlan,
+          billingCycle,
+          priceId,
+          planName: currentPlan.name,
+          displayPrice: displayPrice.amount
         });
+        
+        try {
+          console.log('SignUp: Calling purchaseSubscription function...');
+          const startTime = Date.now();
+          paymentResult = await purchaseSubscription(subscriptionPayload);
+          const endTime = Date.now();
+          console.log('SignUp: purchaseSubscription completed successfully');
+          console.log('SignUp: purchaseSubscription execution time:', endTime - startTime, 'ms');
+        } catch (subscriptionError) {
+          console.error('SignUp: purchaseSubscription failed:', subscriptionError);
+          console.error('SignUp: purchaseSubscription error details:', {
+            message: subscriptionError.message,
+            code: subscriptionError.code,
+            details: subscriptionError.details,
+            stack: subscriptionError.stack
+          });
+          if (subscriptionError.details) {
+            console.error('SignUp: Firebase function error details:', subscriptionError.details);
+          }
+          throw subscriptionError;
+        }
       }
   
-      console.log('SignUp: Payment result:', paymentResult);
+      console.log('SignUp: Payment result received:', paymentResult);
+      console.log('SignUp: Payment result structure:', {
+        hasData: !!paymentResult?.data,
+        dataKeys: paymentResult?.data ? Object.keys(paymentResult.data) : [],
+        fullResult: paymentResult
+      });
   
       // 4) Handle Checkout redirect
+      console.log('=== SignUp: Step 4 - Handling Checkout redirect ===');
       const url = paymentResult?.data?.url;
       const sessionId = paymentResult?.data?.sessionId;
+      
+      console.log('SignUp: Extracted from payment result:', { url, sessionId });
   
       if (url) {
-        // Save minimal data you’ll need after returning from success page
-        localStorage.setItem('postCheckoutSignup', JSON.stringify({
+        console.log('SignUp: URL found - preparing for redirect');
+        // Save minimal data you'll need after returning from success page
+        const postCheckoutData = {
           firstName, lastName, email, phoneNumber, streetAddress, city, state, zip,
           receiveTextUpdates, planData, password,
-        }));
-        console.log('SignUp: Redirecting to Stripe Checkout via URL');
+        };
+        console.log('SignUp: Saving post-checkout data to localStorage:', postCheckoutData);
+        localStorage.setItem('postCheckoutSignup', JSON.stringify(postCheckoutData));
+        
+        console.log('SignUp: Redirecting to Stripe Checkout via URL:', url);
         window.location.href = url;
         return; // stop here
       }
   
       // (Optional) Use stripe-js if only sessionId is returned
       if (sessionId) {
+        console.log('SignUp: SessionId found - using stripe-js redirect');
+        console.log('SignUp: Session ID:', sessionId);
+        console.log('SignUp: Stripe publishable key:', import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+        
         // Ensure publishable key MODE matches the session (pk_live w/ cs_live; pk_test w/ cs_test)
         const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+        console.log('SignUp: Stripe object loaded:', !!stripe);
+        
         const { error } = await stripe.redirectToCheckout({ sessionId });
         if (error) {
-          console.error('Checkout redirect error:', error.message);
+          console.error('SignUp: Checkout redirect error:', error);
+          console.error('SignUp: Checkout redirect error details:', {
+            message: error.message,
+            type: error.type,
+            code: error.code
+          });
           setError(error.message || 'Unable to redirect to checkout. Please try again.');
           return;
         }
+        console.log('SignUp: Stripe redirect initiated successfully');
         return; // navigation likely occurred
       }
   
-      // If we got here, backend didn’t return a usable Checkout session
-      console.error('SignUp: No Checkout URL or sessionId returned');
-      setError('We couldn’t start checkout. Please try again.');
+      // If we got here, backend didn't return a usable Checkout session
+      console.error('SignUp: No Checkout URL or sessionId returned from backend');
+      console.error('SignUp: Payment result was:', paymentResult);
+      setError('We could not start checkout. Please try again.');
   
     } catch (err) {
-      console.error('SignUp: Error during signup process:', err);
+      console.error('=== SignUp: Error during signup process ===');
+      console.error('SignUp: Error object:', err);
+      console.error('SignUp: Error message:', err.message);
+      console.error('SignUp: Error code:', err.code);
+      console.error('SignUp: Error details:', err.details);
       console.error('SignUp: Error stack:', err.stack);
+      console.error('SignUp: Error name:', err.name);
+      
+      // Log additional context for debugging
+      console.error('SignUp: Error context:', {
+        planType,
+        selectedPlan,
+        billingCycle,
+        email,
+        timestamp: new Date().toISOString()
+      });
+      
       setError(err.message || 'Sign up failed. Please try again.');
     } finally {
+      console.log('=== SignUp: Cleanup ===');
       console.log('SignUp: Setting submitting to false');
+      console.log('SignUp: handleSubmit completed at:', new Date().toISOString());
       setSubmitting(false);
     }
   }
@@ -444,7 +610,12 @@ function SignUp() {
             }} 
               >
                 {Object.entries(subscriptionPlans)
-                  .filter(([planId]) => billingCycle === 'yearly' || planId !== 'family')
+                  .filter(([planId]) => {
+                    // Hide family plan if toggle is off
+                    if (planId === 'family' && !showFamilyPlan) return false
+                    // Only show family plan on yearly billing
+                    return billingCycle === 'yearly' || planId !== 'family'
+                  })
                   .map(([planId, plan]) => {
                   const { amount, period } = getDisplayPrice(planId)
                   const isSelected = selectedPlan === planId
