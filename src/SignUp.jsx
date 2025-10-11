@@ -1,120 +1,29 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
-import { doc, setDoc } from 'firebase/firestore'
+import { createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword } from 'firebase/auth'
+import { doc, setDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore'
 import { auth, db } from './firebase'
 import './App.css'
 import { fetchSignInMethodsForEmail } from 'firebase/auth'
 import { getDoc } from 'firebase/firestore'
-
-const subscriptionPlans = {
-  basic: {
-    name: 'Basic',
-    priceMonthly: '$7.99',
-    periodMonthly: '/month',
-    priceYearly: '$86.99',
-    periodYearly: '/year',
-    yearlyDiscount: '10% off',
-    features: ['2 pickups per month'],
-  },
-  premium: {
-    name: 'Premium',
-    priceMonthly: '$14.99',
-    periodMonthly: '/month',
-    priceYearly: '$161.99',
-    periodYearly: '/year',
-    yearlyDiscount: '10% off',
-    features: ['Unlimited pickups'],
-  },
-  family: {
-    name: 'Family',
-    priceYearly: '$154.99',
-    periodYearly: '/year',
-    features: ['Up to 6 people', 'Unlimited pickups'],
-  },
-}
-
-const oneTimePlan = {
-  name: 'One-Time Haul',
-  priceMonthly: '$4.99',
-  periodMonthly: 'per haul',
-  features: ['Pay per haul'],
-}
+import { loadStripe } from '@stripe/stripe-js'
 
 // Firebase Cloud Function URLs
-const FIREBASE_FUNCTIONS_BASE_URL = 'https://us-central1-haulzy-dev.cloudfunctions.net'
+const FIREBASE_FUNCTIONS_BASE_URL = import.meta.env.VITE_FIREBASE_URL
 
-// Helper function to call Firebase Cloud Functions via fetch
-async function callCloudFunction(functionName, data) {
-  const url = `${FIREBASE_FUNCTIONS_BASE_URL}/${functionName}`
-  
-  console.log(`SignUp: Calling ${functionName} at URL:`, url)
-  console.log(`SignUp: Request payload for ${functionName}:`, data)
-  
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({ data })
-    })
-    
-    console.log(`SignUp: ${functionName} response status:`, response.status)
-    console.log(`SignUp: ${functionName} response headers:`, Object.fromEntries(response.headers.entries()))
-    
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`SignUp: ${functionName} HTTP error:`, {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText
-      })
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
-    
-    const result = await response.json()
-    console.log(`SignUp: ${functionName} successful response:`, result)
-    
-    return result
-  } catch (error) {
-    console.error(`SignUp: ${functionName} fetch error:`, error)
-    throw error
-  }
-}
-
-// Wrapper functions for the specific Cloud Functions
-async function purchaseSingleHaul(data) {
-  return await callCloudFunction('purchase_single_haul', data)
-}
-
-async function purchaseSubscription(data) {
-  return await callCloudFunction('purchase_subscription', data)
-}
+// Toggle to show/hide Family plan - set to false to hide it
+const showFamilyPlan = false
 
 function SignUp() {
   const navigate = useNavigate()
   const location = useLocation()
-
-  useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [])
-
-  // Toggle to show/hide Family plan - set to false to hide it
-  const showFamilyPlan = false
-
-  const [selectedPlan, setSelectedPlan] = useState(() => {
-    const planFromState = location.state?.selectedPlan || 'basic'
-    // If family plan is disabled and someone tries to access it, default to basic
-    if (planFromState === 'family' && !showFamilyPlan) {
-      return 'basic'
-    }
-    return planFromState
-  })
-  const [planType, setPlanType] = useState(location.state?.selectedPlan === 'onetime' ? 'onetime' : 'subscription') // 'subscription' | 'onetime'
-  const [billingCycle, setBillingCycle] = useState('yearly') // 'monthly' | 'yearly'
-
+  
+  // All state declarations at the top
+  const [priceData, setPriceData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [planType, setPlanType] = useState(location.state?.selectedPlan === 'onetime' ? 'onetime' : 'subscription')
+  const [billingCycle, setBillingCycle] = useState('yearly')
+  const [selectedPlan, setSelectedPlan] = useState('basic')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
@@ -129,272 +38,315 @@ function SignUp() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  function getDisplayPrice(planId) {
-    if (planType === 'onetime') {
-      return { amount: oneTimePlan.priceMonthly, period: oneTimePlan.periodMonthly }
-    }
-    const plan = subscriptionPlans[planId]
-    if (billingCycle === 'yearly' && plan.priceYearly) {
-      return { amount: plan.priceYearly, period: plan.periodYearly }
-    }
-    return { amount: plan.priceMonthly, period: plan.periodMonthly }
-  }
+  // Helper functions
+  const getDisplayPrice = (planId) => {
+    if (!priceData) return { amount: '$0.00', period: '/month' }
 
-  function getPriceId(planId, billingCycle) {
-    // Replace these with your actual Stripe Price IDs
-    const priceIds = {
-      basic: {
-        monthly: 'price_basic_monthly_id',
-        yearly: 'price_basic_yearly_id'
-      },
-      premium: {
-        monthly: 'price_premium_monthly_id', 
-        yearly: 'price_premium_yearly_id'
-      },
-      family: {
-        yearly: 'price_family_yearly_id'
+    if (planType === 'onetime') {
+      return {
+        amount: oneTimePlan.priceMonthly || '$0.00',
+        period: oneTimePlan.periodMonthly || 'per haul'
       }
     }
-    
-    return priceIds[planId]?.[billingCycle]
+
+    const plan = subscriptionPlans[planId]
+    if (!plan) return { amount: '$0.00', period: '/month' }
+
+    return {
+      amount: billingCycle === 'yearly' ? plan.priceYearly : plan.priceMonthly,
+      period: billingCycle === 'yearly' ? plan.periodYearly : plan.periodMonthly
+    }
   }
 
-  async function handleSubmit(e) {
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
+
+  // Fetch price data from Firestore
+  useEffect(() => {
+    async function fetchPriceData() {
+      try {
+        const settingsRef = doc(db, 'settings', 'products')
+        const settingsDoc = await getDoc(settingsRef)
+        
+        if (settingsDoc.exists()) {
+          const data = settingsDoc.data()
+          console.log('Fetched price data:', data)
+          console.log('Subscription plans:', data.subscriptionPlans)
+          console.log('One-time plan:', data.oneTimePlan)
+          setPriceData(data)
+        } else {
+          console.error('No products document found in settings collection')
+          setError('Unable to load pricing information')
+        }
+      } catch (err) {
+        console.error('Error fetching price data:', err)
+        setError('Unable to load pricing information')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPriceData()
+  }, [])
+  
+
+
+
+  // Compute derived data
+  const subscriptionPlans = priceData?.subscriptionPlans || {}
+  const oneTimePlan = priceData?.oneTimePlan || {}
+
+  // Show loading state while fetching prices
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h2 className="text-2xl font-bold mb-4">Loading pricing information...</h2>
+      </div>
+    )
+  }
+
+  // Show error if price data couldn't be loaded
+  if (!priceData) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h2 className="text-2xl font-bold mb-4 text-red-600">Unable to load pricing information</h2>
+        <p>Please try again later or contact support if the problem persists.</p>
+      </div>
+    )
+  }
+
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-  
-    console.log('=== SignUp: handleSubmit started ===');
-    console.log('SignUp: Timestamp:', new Date().toISOString());
-    console.log('SignUp: Form data:', {
-      firstName, lastName, email, phoneNumber, streetAddress, city, state, zip,
-      selectedPlan, planType, billingCycle, receiveTextUpdates
-    });
-    console.log('SignUp: Password fields populated:', {
-      hasPassword: !!password,
-      hasConfirmPassword: !!confirmPassword,
-      passwordsMatch: password === confirmPassword
-    });
-  
-    if (password !== confirmPassword) {
-      console.log('SignUp: Password mismatch error');
-      setError('Passwords do not match');
-      return;
-    }
-  
-    console.log('SignUp: Setting submitting to true');
     setSubmitting(true);
-  
+
     try {
-      // 1) Check if user exists
-      console.log('=== SignUp: Step 1 - Checking if user exists ===');
-      console.log('SignUp: Checking email:', email);
-      console.log('SignUp: Auth object:', auth);
-      
-      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
-      console.log('SignUp: Sign in methods found:', signInMethods);
-      console.log('SignUp: Number of existing sign-in methods:', signInMethods.length);
-      
+      // Validate password match
+      if (password !== confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
+
+      // Check if user already exists
+      const signInMethods = await fetchSignInMethodsForEmail(auth, email.trim());
       if (signInMethods.length > 0) {
-        console.log('SignUp: User already exists - aborting signup');
-        setError('An account with this email already exists. Please sign in instead.');
+        throw new Error('An account with this email already exists');
+      }
+
+      // Create Firebase user
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      const user = userCredential.user;
+
+      // Immediately create the user document in Firestore
+      await setDoc(doc(db, 'users', user.uid), {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
+        phoneNumber: phoneNumber ? phoneNumber.replace(/\D/g, '') : null,
+        streetAddress: streetAddress.trim(),
+        city: city.trim(),
+        state: state.trim(),
+        zip: zip.trim(),
+        country: 'US',
+        type: 'customer',
+        isAdmin: false,
+        pickupCredit: false,
+        approved: true,
+        receiveTextUpdates: receiveTextUpdates,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update user profile with name
+      await updateProfile(user, {
+        displayName: `${firstName.trim()} ${lastName.trim()}`
+      });
+
+      // For one-time hauls, skip the purchase process and navigate directly
+      if (planType === 'onetime') {
+        navigate('/download');
         return;
       }
-      console.log('SignUp: Email is available - proceeding with signup');
-  
-      // 2) Prepare payment data
-      console.log('=== SignUp: Step 2 - Preparing payment data ===');
-      const displayPrice = getDisplayPrice(selectedPlan);
-      const currentPlan = planType === 'onetime' ? oneTimePlan : subscriptionPlans[selectedPlan];
-      const actualBillingCycle = planType === 'onetime' ? 'onetime' : billingCycle;
-      const priceId = getPriceId(selectedPlan, actualBillingCycle);
-  
-      console.log('SignUp: Display price calculation result:', displayPrice);
-      console.log('SignUp: Current plan object:', currentPlan);
-      console.log('SignUp: Actual billing cycle:', actualBillingCycle);
-      console.log('SignUp: Price ID for Stripe:', priceId);
-  
-      const customerData = {
-        email,
-        name: `${firstName} ${lastName}`,
-        phone: phoneNumber.replace(/\D/g, ''),
+
+      // Only proceed with billing setup for subscription plans
+      const priceId = billingCycle === 'yearly' 
+        ? subscriptionPlans[selectedPlan].priceYearlyId 
+        : subscriptionPlans[selectedPlan].priceMonthlyId;
+
+      if (!priceId) {
+        throw new Error('Invalid plan selection');
+      }
+
+      // Get promotion code from URL if present
+      const params = new URLSearchParams(location.search);
+      const promoCode = params.get('code');
+
+      // Prepare the payload with user UID
+      const payload = {
+        price_id: priceId,
+        uid: user.uid,
+        email: email.trim(),
+        name: `${firstName.trim()} ${lastName.trim()}`,
+        ...(phoneNumber && { phone: phoneNumber.replace(/\D/g, '') }),
         address: {
-          line1: streetAddress, city, state, postal_code: zip, country: 'US'
-        }
-      };
-  
-      const planData = {
-        type: planType === 'onetime' ? 'onetime' : selectedPlan,
-        name: currentPlan.name,
-        billingCycle: actualBillingCycle,
-        price: displayPrice.amount,
-        period: displayPrice.period,
-        features: currentPlan.features,
-        yearlyDiscount: currentPlan.yearlyDiscount,
-      };
-  
-      console.log('SignUp: Customer data prepared:', customerData);
-      console.log('SignUp: Plan data prepared:', planData);
-      console.log('SignUp: Phone number cleaned:', phoneNumber, '->', phoneNumber.replace(/\D/g, ''));
-  
-      // 3) Create Checkout Session via your backend
-      console.log('=== SignUp: Step 3 - Creating Checkout Session ===');
-      let paymentResult;
-      
-      if (planType === 'onetime') {
-        console.log('SignUp: Processing one-time payment via purchaseSingleHaul');
-        const amount = Math.round(parseFloat(displayPrice.amount.replace('$', '')) * 100);
-        console.log('SignUp: One-time amount calculation:', displayPrice.amount, '->', amount, 'cents');
-        
-        const singleHaulPayload = {
-          customer: customerData,
-          plan: planData,
-          amount: amount,
-        };
-        console.log('SignUp: purchaseSingleHaul payload:', singleHaulPayload);
-        
-        try {
-          console.log('SignUp: Calling purchaseSingleHaul function...');
-          paymentResult = await purchaseSingleHaul(singleHaulPayload);
-          console.log('SignUp: purchaseSingleHaul completed successfully');
-        } catch (singleHaulError) {
-          console.error('SignUp: purchaseSingleHaul failed:', singleHaulError);
-          console.error('SignUp: purchaseSingleHaul error details:', {
-            message: singleHaulError.message,
-            code: singleHaulError.code,
-            details: singleHaulError.details,
-            stack: singleHaulError.stack
-          });
-          throw singleHaulError;
-        }
-      } else {
-        console.log('SignUp: Processing subscription payment via purchaseSubscription');
-        
-        const subscriptionPayload = {
-          customer: customerData,
-          plan: planData,
-          priceId: priceId,
-          billingCycle: actualBillingCycle,
-        };
-        console.log('SignUp: purchaseSubscription payload:', subscriptionPayload);
-        console.log('SignUp: Subscription details:', {
-          selectedPlan,
-          billingCycle,
-          priceId,
-          planName: currentPlan.name,
-          displayPrice: displayPrice.amount
-        });
-        
-        try {
-          console.log('SignUp: Calling purchaseSubscription function...');
-          const startTime = Date.now();
-          paymentResult = await purchaseSubscription(subscriptionPayload);
-          const endTime = Date.now();
-          console.log('SignUp: purchaseSubscription completed successfully');
-          console.log('SignUp: purchaseSubscription execution time:', endTime - startTime, 'ms');
-        } catch (subscriptionError) {
-          console.error('SignUp: purchaseSubscription failed:', subscriptionError);
-          console.error('SignUp: purchaseSubscription error details:', {
-            message: subscriptionError.message,
-            code: subscriptionError.code,
-            details: subscriptionError.details,
-            stack: subscriptionError.stack
-          });
-          if (subscriptionError.details) {
-            console.error('SignUp: Firebase function error details:', subscriptionError.details);
+          line1: streetAddress.trim(),
+          city: city.trim(),
+          state: state.trim(),
+          postal_code: zip.trim(),
+          country: 'US'
+        },
+        ...(promoCode && {
+          discount: {
+            promotion_code: promoCode
           }
-          throw subscriptionError;
-        }
-      }
-  
-      console.log('SignUp: Payment result received:', paymentResult);
-      console.log('SignUp: Payment result structure:', {
-        hasData: !!paymentResult?.data,
-        dataKeys: paymentResult?.data ? Object.keys(paymentResult.data) : [],
-        fullResult: paymentResult
+        })
+      };
+
+      // Process subscription purchase
+      const response = await fetch(`${FIREBASE_FUNCTIONS_BASE_URL}/purchase_subscription`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
       });
-  
-      // 4) Handle Checkout redirect
-      console.log('=== SignUp: Step 4 - Handling Checkout redirect ===');
-      const url = paymentResult?.data?.url;
-      const sessionId = paymentResult?.data?.sessionId;
-      
-      console.log('SignUp: Extracted from payment result:', { url, sessionId });
-  
-      if (url) {
-        console.log('SignUp: URL found - preparing for redirect');
-        // Save minimal data you'll need after returning from success page
-        const postCheckoutData = {
-          firstName, lastName, email, phoneNumber, streetAddress, city, state, zip,
-          receiveTextUpdates, planData, password,
-        };
-        console.log('SignUp: Saving post-checkout data to localStorage:', postCheckoutData);
-        localStorage.setItem('postCheckoutSignup', JSON.stringify(postCheckoutData));
-        
-        console.log('SignUp: Redirecting to Stripe Checkout via URL:', url);
-        window.location.href = url;
-        return; // stop here
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error('Purchase failed:', errorData);
+        throw new Error(errorData?.message || 'Failed to process purchase');
       }
-  
-      // (Optional) Use stripe-js if only sessionId is returned
-      if (sessionId) {
-        console.log('SignUp: SessionId found - using stripe-js redirect');
-        console.log('SignUp: Session ID:', sessionId);
-        console.log('SignUp: Stripe publishable key:', import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
-        
-        // Ensure publishable key MODE matches the session (pk_live w/ cs_live; pk_test w/ cs_test)
+
+      const data = await response.json();
+      console.log('Purchase processed successfully:', data);
+
+      // Redirect to checkout
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (data.sessionId) {
         const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
-        console.log('SignUp: Stripe object loaded:', !!stripe);
-        
-        const { error } = await stripe.redirectToCheckout({ sessionId });
-        if (error) {
-          console.error('SignUp: Checkout redirect error:', error);
-          console.error('SignUp: Checkout redirect error details:', {
-            message: error.message,
-            type: error.type,
-            code: error.code
-          });
-          setError(error.message || 'Unable to redirect to checkout. Please try again.');
-          return;
-        }
-        console.log('SignUp: Stripe redirect initiated successfully');
-        return; // navigation likely occurred
+        const { error } = await stripe.redirectToCheckout({ sessionId: data.sessionId });
+        if (error) throw error;
+      } else {
+        throw new Error('No checkout URL or session ID provided');
       }
-  
-      // If we got here, backend didn't return a usable Checkout session
-      console.error('SignUp: No Checkout URL or sessionId returned from backend');
-      console.error('SignUp: Payment result was:', paymentResult);
-      setError('We could not start checkout. Please try again.');
-  
+      
     } catch (err) {
-      console.error('=== SignUp: Error during signup process ===');
-      console.error('SignUp: Error object:', err);
-      console.error('SignUp: Error message:', err.message);
-      console.error('SignUp: Error code:', err.code);
-      console.error('SignUp: Error details:', err.details);
-      console.error('SignUp: Error stack:', err.stack);
-      console.error('SignUp: Error name:', err.name);
+      console.error('Error during signup:', err);
       
-      // Log additional context for debugging
-      console.error('SignUp: Error context:', {
-        planType,
-        selectedPlan,
-        billingCycle,
-        email,
-        timestamp: new Date().toISOString()
-      });
-      
-      setError(err.message || 'Sign up failed. Please try again.');
-    } finally {
-      console.log('=== SignUp: Cleanup ===');
-      console.log('SignUp: Setting submitting to false');
-      console.log('SignUp: handleSubmit completed at:', new Date().toISOString());
+      // If we created a user but checkout failed, clean up by deleting the user
+      // Only do this for subscription plans, not one-time plans
+      if (planType !== 'onetime' && err.message.includes('Failed to process purchase') && auth.currentUser) {
+        try {
+          // Delete the Firestore user document
+          await deleteDoc(doc(db, 'users', auth.currentUser.uid));
+          // Delete the auth user
+          await auth.currentUser.delete();
+        } catch (deleteErr) {
+          console.error('Failed to clean up user after checkout error:', deleteErr);
+        }
+      }
+
+      // Format user-friendly error messages
+      let errorMessage = err.message;
+      if (err.code) {
+        switch (err.code) {
+          case 'auth/email-already-in-use':
+            errorMessage = 'An account with this email already exists.';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = 'Please enter a valid email address.';
+            break;
+          case 'auth/weak-password':
+            errorMessage = 'Password should be at least 6 characters long.';
+            break;
+          default:
+            errorMessage = err.message || 'Failed to create account. Please try again.';
+        }
+      }
+
+      setError(errorMessage);
       setSubmitting(false);
     }
-  }
-  
+  };
 
   return (
-    <main className="main-content" style={{ padding: '0.5rem', minHeight: '100vh' }}>
+    <main className="main-content" style={{ padding: '0.5rem', minHeight: '100vh', position: 'relative' }}>
+      {submitting && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            backdropFilter: 'blur(5px)',
+          }}
+        >
+          <div
+            style={{
+              width: '100px',
+              height: '100px',
+              border: '4px solid var(--primary-color)',
+              borderRadius: '50%',
+              borderTopColor: 'transparent',
+              animation: 'spin 1s linear infinite',
+              marginBottom: '2rem',
+            }}
+          />
+          <h2
+            style={{
+              color: 'var(--primary-color)',
+              fontFamily: 'var(--font-heading)',
+              textAlign: 'center',
+              margin: 0,
+              marginBottom: '1rem',
+            }}
+          >
+            Signing you up for Haulzy
+          </h2>
+          <p
+            style={{
+              color: 'var(--text-dark)',
+              fontFamily: 'var(--font-body)',
+              textAlign: 'center',
+              margin: 0,
+              opacity: 0.8,
+              maxWidth: '300px',
+            }}
+          >
+            We're setting up your account and preparing your checkout session...
+          </p>
+        </div>
+      )}
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+
+          input[type="checkbox"]:checked::after {
+            content: '✓';
+            color: white;
+            font-size: ${window.innerWidth <= 768 ? '16px' : '14px'};
+            font-weight: bold;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: block;
+          }
+        `}
+      </style>
       <section
         className="form-container"
         style={{
@@ -748,7 +700,7 @@ function SignUp() {
             border: '1px solid var(--border-color)',
           }}
         >
-          <h2 style={{ marginTop: 0, color: 'var(--text-dark)', fontFamily: 'var(--font-heading)' }}>Create Your Account</h2>
+          <h2 style={{ marginTop: 0, color: 'var(--text-dark)', fontFamily: 'var(--font-heading)' }}>Sign Up for Haulzy</h2>
 
           <form onSubmit={handleSubmit} style={{ display: 'grid', gap: window.innerWidth <= 768 ? '0.75rem' : '0.9rem' }}>
             <div style={{ display: 'grid', gap: window.innerWidth <= 768 ? '0.75rem' : '0.9rem', gridTemplateColumns: window.innerWidth <= 480 ? '1fr' : 'repeat(auto-fit, minmax(140px, 1fr))' }}>
@@ -769,14 +721,48 @@ function SignUp() {
             <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} style={inputStyle} />
             <input type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} style={inputStyle} />
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-dark)', fontFamily: 'var(--font-body)' }}>
+            <label style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 12, 
+                color: 'var(--text-dark)', 
+                fontFamily: 'var(--font-body)',
+                fontSize: window.innerWidth <= 768 ? '0.95rem' : '1rem',
+                padding: window.innerWidth <= 768 ? '0.5rem 0' : '0.25rem 0',
+                userSelect: 'none'
+              }}>
               <input 
                 type="checkbox" 
                 checked={receiveTextUpdates} 
                 onChange={(e) => setReceiveTextUpdates(e.target.checked)}
-                style={{ accentColor: 'var(--primary-color)' }}
+                style={{ 
+                  accentColor: 'var(--primary-color)',
+                  width: window.innerWidth <= 768 ? '20px' : '16px',
+                  height: window.innerWidth <= 768 ? '20px' : '16px',
+                  margin: 0,
+                  cursor: 'pointer',
+                  border: '2px solid var(--border-color)',
+                  borderRadius: '4px',
+                  backgroundColor: 'var(--text-light)',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                  appearance: 'none',
+                  position: 'relative',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onInput={(e) => {
+                  if (e.target.checked) {
+                    e.target.style.backgroundColor = 'var(--primary-color)';
+                    e.target.style.borderColor = 'var(--primary-color)';
+                  } else {
+                    e.target.style.backgroundColor = 'var(--text-light)';
+                    e.target.style.borderColor = 'var(--border-color)';
+                  }
+                }}
               />
-              Receive text updates about your packages
+              <span style={{ flex: 1 }}>Receive text updates about your packages</span>
             </label>
 
             {error && <div style={{ color: '#dc2626', fontSize: '0.9rem', fontFamily: 'var(--font-body)' }}>{error}</div>}
@@ -830,6 +816,6 @@ const inputStyle = {
   outline: 'none',
   WebkitAppearance: 'none', // Remove iOS styling
   boxSizing: 'border-box',
-}
+};
 
-export default SignUp
+export default SignUp;

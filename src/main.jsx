@@ -14,8 +14,21 @@ import Returns from './Returns.jsx'
 import Users from './Users.jsx'
 import Download from './Download.jsx'
 import SuccessPage from './SuccessPage.jsx'
+import CheckoutCancel from './CheckoutCancel.jsx'
+import ManageAccount from './ManageAccount.jsx'
+import UpgradePlan from './UpgradePlan.jsx'
 
 const router = createBrowserRouter([
+  // Checkout routes at top-level (no navigation/footer)
+  {
+    path: '/checkout/success',
+    element: <SuccessPage />
+  },
+  {
+    path: '/checkout/cancel',
+    element: <CheckoutCancel />
+  },
+  // Main app routes with navigation/footer
   {
     path: '/',
     element: <App />,
@@ -23,10 +36,19 @@ const router = createBrowserRouter([
       { index: true, element: <LandingPage /> },
       { path: 'login', element: <Login /> },
       { path: 'signup', element: <SignUp /> },
-      { path: 'success', element: <SuccessPage /> },
       { path: 'privacy', element: <PrivacyPolicy /> },
       { path: 'terms', element: <Terms /> },
       { path: 'download', element: <Download /> },
+      { path: 'account', element: (
+        <ProtectedRoute>
+          <ManageAccount />
+        </ProtectedRoute>
+      ) },
+      { path: 'upgrade', element: (
+        <ProtectedRoute>
+          <UpgradePlan />
+        </ProtectedRoute>
+      ) },
       { path: 'dashboard', element: (
         <AdminRoute>
           <Dashboard />

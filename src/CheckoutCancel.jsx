@@ -1,14 +1,15 @@
-import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { auth } from './firebase';
 import './App.css';
 
-function SuccessPage() {
+function CheckoutCancel() {
   const navigate = useNavigate();
 
   // Automatically redirect to dashboard after 5 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigate('/download');
+      navigate('/');
     }, 5000);
 
     return () => clearTimeout(timer);
@@ -41,7 +42,7 @@ function SuccessPage() {
           style={{
             width: '80px',
             height: '80px',
-            background: 'var(--primary-color)',
+            background: '#6B7280', // Using a neutral color for cancel
             borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
@@ -49,7 +50,7 @@ function SuccessPage() {
             margin: '0 auto 1.5rem',
           }}
         >
-          <span style={{ fontSize: '40px', color: 'white' }}>✓</span>
+          <span style={{ fontSize: '40px', color: 'white' }}>←</span>
         </div>
 
         <h1
@@ -60,21 +61,9 @@ function SuccessPage() {
             margin: '0 0 1rem',
           }}
         >
-          Success!
+          Checkout Cancelled
         </h1>
         
-        <h2
-          style={{
-            color: 'var(--primary-color)',
-            fontFamily: 'var(--font-heading)',
-            fontSize: '1.75rem',
-            margin: '0 0 1.5rem',
-            fontWeight: 600,
-          }}
-        >
-          Welcome to Haulzy
-        </h2>
-
         <p
           style={{
             color: 'var(--text-dark)',
@@ -83,29 +72,48 @@ function SuccessPage() {
             margin: '0 0 2rem',
           }}
         >
-          You're ready to get started! Download the Haulzy app to book your first pickup.
+          No worries! You can try again whenever you're ready.
         </p>
 
-        <button
-          onClick={() => navigate('/download')}
-          style={{
-            background: 'var(--primary-color)',
-            color: 'white',
-            border: 'none',
-            padding: '1rem 2rem',
-            borderRadius: '8px',
-            fontSize: '1.1rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            boxShadow: '0 2px 8px rgba(0, 191, 179, 0.2)',
-          }}
-        >
-          Download Haulzy
-        </button>
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => navigate('/signup')}
+            style={{
+              background: 'var(--primary-color)',
+              color: 'white',
+              border: 'none',
+              padding: '1rem 2rem',
+              borderRadius: '8px',
+              fontSize: '1.1rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 8px rgba(0, 191, 179, 0.2)',
+            }}
+          >
+            Try Again
+          </button>
+
+          <button
+            onClick={() => navigate('/')}
+            style={{
+              background: 'transparent',
+              color: 'var(--text-dark)',
+              border: '2px solid var(--border-color)',
+              padding: '1rem 2rem',
+              borderRadius: '8px',
+              fontSize: '1.1rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            Return Home
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-export default SuccessPage;
+export default CheckoutCancel;

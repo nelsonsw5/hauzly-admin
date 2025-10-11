@@ -3,15 +3,17 @@ import { collection, getDocs, doc, updateDoc, serverTimestamp, getDoc } from 'fi
 import { db } from './firebase'
 import './App.css'
 
+const FIREBASE_FUNCTIONS_BASE_URL = import.meta.env.VITE_FIREBASE_URL
+
 function toDateMaybe(value) {
   if (!value) {
-    console.log('[toDateMaybe] Received falsy value:', value)
+    // console.log('[toDateMaybe] Received falsy value:', value)
     return null
   }
   if (value?.toDate) {
     try { 
       const d = value.toDate()
-      console.log('[toDateMaybe] Converted Firestore Timestamp to Date:', d)
+      // console.log('[toDateMaybe] Converted Firestore Timestamp to Date:', d)
       return d
     } catch (err) { 
       console.error('[toDateMaybe] Error converting Firestore Timestamp:', err)
@@ -19,56 +21,56 @@ function toDateMaybe(value) {
   }
   if (typeof value === 'number') {
     const d = new Date(value)
-    console.log('[toDateMaybe] Converted number to Date:', value, d)
+    // console.log('[toDateMaybe] Converted number to Date:', value, d)
     return d
   }
   if (typeof value === 'string') {
     const d = new Date(value)
     if (isNaN(d.getTime())) {
-      console.warn('[toDateMaybe] Invalid date string:', value)
+      // console.warn('[toDateMaybe] Invalid date string:', value)
       return null
     }
-    console.log('[toDateMaybe] Converted string to Date:', value, d)
+    // console.log('[toDateMaybe] Converted string to Date:', value, d)
     return d
   }
-  console.warn('[toDateMaybe] Could not convert value to Date:', value)
+  // console.warn('[toDateMaybe] Could not convert value to Date:', value)
   return null
 }
 
 function formatPickupAddressObject(address) {
   if (!address || typeof address !== 'object') {
-    console.warn('[formatPickupAddressObject] Invalid address object:', address)
+    // console.warn('[formatPickupAddressObject] Invalid address object:', address)
     return ''
   }
   const line1 = address.street || ''
   const cityState = [address.city, address.state].filter(Boolean).join(', ')
   const parts = [line1, cityState, address.zip].filter(Boolean)
   const formatted = parts.join(' • ')
-  console.log('[formatPickupAddressObject] Formatted address:', formatted)
+  // console.log('[formatPickupAddressObject] Formatted address:', formatted)
   return formatted
 }
 
 function formatDropoffLocation(dropoffLocation) {
-  console.log('[formatDropoffLocation] Input dropoffLocation:', dropoffLocation)
+  // console.log('[formatDropoffLocation] Input dropoffLocation:', dropoffLocation)
   if (!dropoffLocation || typeof dropoffLocation !== 'object') {
-    console.warn('[formatDropoffLocation] Invalid dropoff location object:', dropoffLocation)
+    // console.warn('[formatDropoffLocation] Invalid dropoff location object:', dropoffLocation)
     return ''
   }
   const address = dropoffLocation.address || ''
   const cityState = [dropoffLocation.city, dropoffLocation.state].filter(Boolean).join(', ')
   const parts = [address, cityState, dropoffLocation.zip].filter(Boolean)
   const formatted = parts.join(' • ')
-  console.log('[formatDropoffLocation] Formatted dropoff location:', formatted)
+  // console.log('[formatDropoffLocation] Formatted dropoff location:', formatted)
   return formatted
 }
 
 function formatDateTime(date) {
   if (!date) {
-    console.log('[formatDateTime] No date provided')
+    // console.log('[formatDateTime] No date provided')
     return '—'
   }
   const formatted = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date)
-  console.log('[formatDateTime] Formatted date:', date, formatted)
+  // console.log('[formatDateTime] Formatted date:', date, formatted)
   return formatted
 }
 
@@ -79,7 +81,7 @@ function statusPillColor(status) {
   else if (['processing', 'active', 'in_progress', 'in-progress', 'ongoing', 'received'].includes(s)) color = '#0284c7'
   else if (['pending', 'scheduled', 'queued'].includes(s)) color = '#a16207'
   else if (['cancelled', 'canceled', 'failed'].includes(s)) color = '#dc2626'
-  console.log('[statusPillColor] Status:', status, 'Color:', color)
+  // console.log('[statusPillColor] Status:', status, 'Color:', color)
   return color
 }
 
@@ -139,7 +141,7 @@ function Returns() {
     async function loadReturnsItems() {
       setLoading(true)
       setError('')
-      console.log('[loadReturnsItems] Loading returns items...')
+      // console.log('[loadReturnsItems] Loading returns items...')
       
       try {
         // Get all pickups, items, users, and return locations in parallel
@@ -157,10 +159,10 @@ function Returns() {
         const allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }))
         const allReturnLocations = returnLocationsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
         
-        console.log('[loadReturnsItems] Loaded pickups:', pickups.length)
-        console.log('[loadReturnsItems] Loaded items:', allItems.length)
-        console.log('[loadReturnsItems] Loaded users:', allUsers.length)
-        console.log('[loadReturnsItems] Loaded return locations:', allReturnLocations.length)
+        // console.log('[loadReturnsItems] Loaded pickups:', pickups.length)
+        // console.log('[loadReturnsItems] Loaded items:', allItems.length)
+        // console.log('[loadReturnsItems] Loaded users:', allUsers.length)
+        // console.log('[loadReturnsItems] Loaded return locations:', allReturnLocations.length)
 
         // Create customers lookup map
         const customersMap = Object.fromEntries(
@@ -180,11 +182,11 @@ function Returns() {
           
           // Check if pickup has items array
           if (!pickup.items || !Array.isArray(pickup.items)) {
-            console.log('[loadReturnsItems] Pickup has no items array:', pickup.id)
+            // console.log('[loadReturnsItems] Pickup has no items array:', pickup.id)
             continue
           }
           
-          console.log('[loadReturnsItems] Processing pickup items:', pickup.id, pickup.items.length)
+          // console.log('[loadReturnsItems] Processing pickup items:', pickup.id, pickup.items.length)
           
           for (const itemRef of pickup.items) {
             // Handle both string IDs and objects with itemId property
@@ -240,9 +242,9 @@ function Returns() {
           }
         }
 
-        console.log('[loadReturnsItems] Total returns items loaded:', returnsItems.length)
+        // console.log('[loadReturnsItems] Total returns items loaded:', returnsItems.length)
         if (returnsItems.length > 0) {
-          console.log('[loadReturnsItems] Sample returns item:', returnsItems[0])
+          // console.log('[loadReturnsItems] Sample returns item:', returnsItems[0])
         }
         
         setItems(returnsItems)
@@ -266,7 +268,7 @@ function Returns() {
       return []
     }
     const t = term.trim().toLowerCase()
-    console.log('[filtered] Filtering items with term:', t, 'statusFilter:', statusFilter, 'dropoffFilter:', dropoffFilter)
+    // console.log('[filtered] Filtering items with term:', t, 'statusFilter:', statusFilter, 'dropoffFilter:', dropoffFilter)
     return items.filter(item => {
       const itemStatus = (item.status || '').toString()
       
@@ -349,7 +351,7 @@ function Returns() {
       const scanStatus = confirmationAction === 'could_not_be_scanned' ? 'Could not be scanned' : 'Scanned'
       
       // Call the scan_in_item Firebase function
-      const response = await fetch('https://us-central1-haulzy-dev.cloudfunctions.net/scan_in_item', {
+      const response = await fetch(`${FIREBASE_FUNCTIONS_BASE_URL}/scan_in_item`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -365,7 +367,7 @@ function Returns() {
       }
 
       const result = await response.json()
-      console.log('scan_in_item result:', result)
+
 
       // Update local state with the actual status that was sent to the function
       setItems(prev => prev.map(it => it.id === confirmationItem.id ? { ...it, status: scanStatus } : it))
@@ -552,9 +554,9 @@ function Returns() {
 
                           {/* QR Code */}  
                           {(() => {
-                            console.log('Item Card - item:', item);
+                            // console.log('Item Card - item:', item);
                             const hasQrCode = (item.qrCode && item.qrCode.url);
-                            console.log('Item Card - hasQrCode:', hasQrCode);
+                            // console.log('Item Card - hasQrCode:', hasQrCode) ;
                             return hasQrCode;
                           })() && (
                             <div style={{ marginBottom: '1rem' }}>
@@ -587,11 +589,11 @@ function Returns() {
                                       e.target.style.boxShadow = 'none';
                                     }}
                                     onError={(e) => {
-                                      console.log('Item Card QR Code image failed to load:', e);
+                                      // console.log('Item Card QR Code image failed to load:', e);
                                       e.target.style.display = 'none'
                                     }}
                                     onLoad={() => {
-                                      console.log('Item Card QR Code image loaded successfully');
+                                      // console.log('Item Card QR Code image loaded successfully');
                                     }}
                                   />
                                 </div>
@@ -725,11 +727,11 @@ function Returns() {
 
               {/* QR Code in Modal */}
               {(() => {
-                console.log('Process Return Modal - selectedItem:', selectedItem);
-                console.log('Process Return Modal - qrCode:', selectedItem.qrCode);
-                console.log('Process Return Modal - qr_code:', selectedItem.qr_code);
+                // console.log('Process Return Modal - selectedItem:', selectedItem);
+                // console.log('Process Return Modal - qrCode:', selectedItem.qrCode);
+                // console.log('Process Return Modal - qr_code:', selectedItem.qr_code);
                 const hasQrCode = (selectedItem.qrCode && selectedItem.qrCode.url) || (selectedItem.qr_code && selectedItem.qr_code.url);
-                console.log('Process Return Modal - hasQrCode:', hasQrCode);
+                // console.log('Process Return Modal - hasQrCode:', hasQrCode);
                 return hasQrCode;
               })() && (
                 <div style={{ marginBottom: '1rem' }}>
@@ -762,11 +764,11 @@ function Returns() {
                           e.target.style.boxShadow = 'none';
                         }}
                         onError={(e) => {
-                          console.log('QR Code image failed to load:', e);
+                          // console.log('QR Code image failed to load:', e);
                           e.target.style.display = 'none'
                         }}
                         onLoad={() => {
-                          console.log('QR Code image loaded successfully');
+                          // console.log('QR Code image loaded successfully');
                         }}
                       />
                     </div>

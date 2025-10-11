@@ -382,7 +382,7 @@ function LandingPage() {
         <p style={{ marginBottom: '2rem', opacity: '0.9' }}>
         </p>
         <button className="cta-primary" style={{ fontSize: '1.2rem', padding: '1rem 2rem' }}>
-          Claim your free pickup
+          Start Your Free Trial
         </button>
         {/* <p style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: '0.7' }}>
           Up to 3 boxes free

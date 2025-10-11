@@ -29,7 +29,7 @@ function Login() {
         // Don't fail login if this update fails
       }
       
-      navigate('/dashboard')
+      navigate('/account')
     } catch (err) {
       setError(err.message || 'Login failed')
     } finally {

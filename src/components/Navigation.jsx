@@ -19,7 +19,21 @@ function Navigation() {
   }
 
   const handlePricingClick = () => {
-    navigate('/signup')
+    if (location.pathname !== '/') {
+      navigate('/')
+      // Add a small delay to allow navigation to complete
+      setTimeout(() => {
+        const pricingSection = document.getElementById('pricing')
+        if (pricingSection) {
+          pricingSection.scrollIntoView({ behavior: 'smooth' })
+        }
+      }, 100)
+    } else {
+      const pricingSection = document.getElementById('pricing')
+      if (pricingSection) {
+        pricingSection.scrollIntoView({ behavior: 'smooth' })
+      }
+    }
     closeMobileMenu()
   }
 
@@ -50,7 +64,8 @@ function Navigation() {
         </button>
         
         <nav className={`nav-menu ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
-          {(location.pathname === '/' || location.pathname === '/signup') && (
+          {/* Show Download and Pricing buttons on Login and Signup pages */}
+          {(location.pathname === '/' || location.pathname === '/signup' || location.pathname === '/login' || location.pathname === '/account') && (
             <Link 
               to="/download" 
               className="nav-link download-btn" 
@@ -59,7 +74,7 @@ function Navigation() {
               Download
             </Link>
           )}
-          {(location.pathname === '/' || location.pathname === '/download') && (
+          {(location.pathname === '/' || location.pathname === '/download' || location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/account') && (
             <button 
               className="nav-link pricing-btn" 
               onClick={handlePricingClick}
@@ -84,13 +99,31 @@ function Navigation() {
               </button>
             </>
           ) : user ? (
-            <button className="nav-link logout-btn" onClick={handleLogout}>
-              Logout
-            </button>
-          ) : location.pathname === '/' ? (
+            <>
+              <Link to="/account" className="nav-link pricing-btn" onClick={closeMobileMenu}>
+                Manage Account
+              </Link>
+              <button className="nav-link logout-btn" onClick={handleLogout}>
+                Logout
+              </button>
+            </>
+          ) : location.pathname === '/login' ? (
+            <Link to="/signup" className="nav-link signup-btn" onClick={closeMobileMenu}>
+              Sign Up
+            </Link>
+          ) : location.pathname === '/signup' ? (
             <Link to="/login" className="nav-link login-btn" onClick={closeMobileMenu}>
               Login
             </Link>
+          ) : (location.pathname === '/' || location.pathname === '/download') ? (
+            <>
+              <Link to="/signup" className="nav-link signup-btn" onClick={closeMobileMenu}>
+                Sign Up
+              </Link>
+              <Link to="/login" className="nav-link login-btn" onClick={closeMobileMenu}>
+                Login
+              </Link>
+            </>
           ) : null}
         </nav>
       </div>

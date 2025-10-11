@@ -1,0 +1,21 @@
+{
+    "price_id": "price_...",          // Stripe Price ID for the chosen plan
+  
+    "user": {
+      "email": "user@example.com",
+      "name": "First Last",
+      "phone": "+18015551234"         // optional
+    },
+  
+    "address": {                      // optional, but helpful for taxes
+      "line1": "833 E 700 S",
+      "city": "Springville",
+      "state": "UT",
+      "postal_code": "84663",
+      "country": "US"
+    },
+  
+    "discount": {                     // optional
+      "promotion_code": "PROMO2025"   // or "coupon": "coupon_..."
+    }
+  }
