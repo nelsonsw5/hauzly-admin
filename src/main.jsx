@@ -17,6 +17,7 @@ import SuccessPage from './SuccessPage.jsx'
 import CheckoutCancel from './CheckoutCancel.jsx'
 import ManageAccount from './ManageAccount.jsx'
 import UpgradePlan from './UpgradePlan.jsx'
+import DeleteAccount from './DeleteAccount.jsx'
 
 const router = createBrowserRouter([
   // Checkout routes at top-level (no navigation/footer)
@@ -49,6 +50,7 @@ const router = createBrowserRouter([
           <UpgradePlan />
         </ProtectedRoute>
       ) },
+      { path: 'delete-account', element: <DeleteAccount /> },
       { path: 'dashboard', element: (
         <AdminRoute>
           <Dashboard />

@@ -19,6 +19,14 @@ function Navigation() {
   }
 
   const handlePricingClick = () => {
+    // If user is logged in, go to upgrade plan page
+    if (user) {
+      navigate('/upgrade')
+      closeMobileMenu()
+      return
+    }
+
+    // If not logged in, scroll to pricing section on landing page
     if (location.pathname !== '/') {
       navigate('/')
       // Add a small delay to allow navigation to complete

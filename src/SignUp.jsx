@@ -129,18 +129,26 @@ function SignUp() {
         throw new Error('Passwords do not match');
       }
 
+      console.group('🔐 User Signup Process');
+
       // Check if user already exists
+      console.log('🔍 Checking if email already exists:', email.trim());
       const signInMethods = await fetchSignInMethodsForEmail(auth, email.trim());
       if (signInMethods.length > 0) {
+        console.error('❌ Email already exists');
         throw new Error('An account with this email already exists');
       }
+      console.log('✅ Email is available');
 
       // Create Firebase user
+      console.log('👤 Creating Firebase user account...');
       const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
       const user = userCredential.user;
+      console.log('✅ User account created:', user.uid);
 
-      // Immediately create the user document in Firestore
-      await setDoc(doc(db, 'users', user.uid), {
+      // Create Firestore user document
+      console.group('📝 Creating Firestore user document');
+      const userData = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
@@ -157,33 +165,73 @@ function SignUp() {
         receiveTextUpdates: receiveTextUpdates,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      });
+      };
+      console.log('📄 User data:', userData);
+      await setDoc(doc(db, 'users', user.uid), userData);
+      console.log('✅ Firestore document created');
+      console.groupEnd();
 
-      // Update user profile with name
+      // Update profile
+      console.log('🔄 Updating user profile...');
       await updateProfile(user, {
         displayName: `${firstName.trim()} ${lastName.trim()}`
       });
+      console.log('✅ Profile updated');
 
-      // For one-time hauls, skip the purchase process and navigate directly
-      if (planType === 'onetime') {
-        navigate('/download');
+      // Check zip code approval
+      console.group('📍 Zip Code Validation');
+      console.log('🔍 Checking zip code:', zip.trim());
+      const approvedZipsDoc = await getDoc(doc(db, 'settings', 'approved-zips'));
+      let currentPlanType = planType;
+      
+      if (approvedZipsDoc.exists()) {
+        const approvedZipsData = approvedZipsDoc.data();
+        const zipData = approvedZipsData[zip.trim()];
+        console.log('📊 Zip code data:', zipData);
+        
+        if (!zipData || !zipData.approved) {
+          console.log('⚠️ Zip code not approved, defaulting to one-time plan');
+          currentPlanType = 'onetime';
+        } else {
+          console.log('✅ Zip code approved');
+        }
+      } else {
+        console.warn('⚠️ Approved-zips document not found, defaulting to one-time plan');
+        currentPlanType = 'onetime';
+      }
+      console.groupEnd();
+
+      // Handle plan routing
+      console.group('🛍️ Plan Processing');
+      if (currentPlanType === 'onetime') {
+        console.log('➡️ One-time plan selected, redirecting to success page');
+        navigate('/checkout/success');
+        console.groupEnd();
+        console.groupEnd();
         return;
       }
 
-      // Only proceed with billing setup for subscription plans
+      // Process subscription
+      console.log('💳 Processing subscription plan');
       const priceId = billingCycle === 'yearly' 
         ? subscriptionPlans[selectedPlan].priceYearlyId 
         : subscriptionPlans[selectedPlan].priceMonthlyId;
 
       if (!priceId) {
+        console.error('❌ Invalid price ID');
         throw new Error('Invalid plan selection');
       }
+      console.log('💰 Selected price ID:', priceId);
 
-      // Get promotion code from URL if present
+      // Handle promotion code
+      console.group('🏷️ Promotion Code Processing');
       const params = new URLSearchParams(location.search);
       const promoCode = params.get('code');
+      console.log('🎫 Promotion code:', promoCode || 'None');
+      console.groupEnd();
 
-      // Prepare the payload with user UID
+      // Prepare checkout payload
+      console.group('📦 Checkout Payload');
       const payload = {
         price_id: priceId,
         uid: user.uid,
@@ -203,6 +251,9 @@ function SignUp() {
           }
         })
       };
+      console.log('📄 Final payload:', payload);
+      console.groupEnd();
+      console.groupEnd();
 
       // Process subscription purchase
       const response = await fetch(`${FIREBASE_FUNCTIONS_BASE_URL}/purchase_subscription`, {
