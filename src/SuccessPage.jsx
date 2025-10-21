@@ -4,7 +4,7 @@ import './App.css';
 
 const IOS_STORE = "https://apps.apple.com/us/app/haulzy/id6749022857";
 const ANDROID_STORE = "https://play.google.com/store/apps/details?id=com.swnelson5.haulzymobile";
-const APP_SCHEME = "haulzy://";
+const APP_SCHEME = "haulzy://customer";
 const ANDROID_INTENT =
   `intent://open#Intent;scheme=haulzy;package=com.swnelson5.haulzymobile;` +
   `S.browser_fallback_url=${encodeURIComponent(ANDROID_STORE)};end`;

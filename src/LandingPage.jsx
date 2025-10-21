@@ -381,8 +381,12 @@ function LandingPage() {
         <h2>Ready to simplify your  returns?</h2>
         <p style={{ marginBottom: '2rem', opacity: '0.9' }}>
         </p>
-        <button className="cta-primary" style={{ fontSize: '1.2rem', padding: '1rem 2rem' }}>
-          Start Your Free Trial
+        <button 
+          className="cta-primary" 
+          style={{ fontSize: '1.2rem', padding: '1rem 2rem' }}
+          onClick={() => handleSignup('onetime')}
+        >
+          Book your first haul
         </button>
         {/* <p style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: '0.7' }}>
           Up to 3 boxes free
