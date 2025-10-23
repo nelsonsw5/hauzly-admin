@@ -1,21 +1,19 @@
 import './App.css'
 import { useNavigate } from 'react-router-dom'
-import tantrumMomImage from './assets/tantrum-blonde-mom.png'
-import happyPickupImage from './assets/happy-package-pickup.png'
-import stacksCrazyImage from './assets/stacks-crazy.png'
+import pickupImage from './assets/pickup-phone.png'
 import screenRecordingVideo from './assets/schedule-pickup.MP4'
 import packageReceivedVideo from './assets/package-received.mov'
-import pickupImage from './assets/pickup-phone.png'
 
 function LandingPage() {
   const navigate = useNavigate()
-  
+
   // Toggle to show/hide Family plan - set to false to hide it
   const showFamilyPlan = false
 
   const handleSignup = (plan) => {
     navigate('/signup', { state: { plan } })
   }
+
   return (
     <main className="main-content">
       {/* Hero Section */}
@@ -37,7 +35,7 @@ function LandingPage() {
         >
           <button
             className="cta-primary"
-            onClick={() => handleSignup('onetime')}
+            onClick={() => navigate('/download')}
           >
             Try it out
           </button>
@@ -115,8 +113,7 @@ function LandingPage() {
               </div>
               <h3>We Handle It</h3>
               <p>
-                Our trusted drivers pick up, transport and return your packages.
-                with care.
+                Our trusted drivers pick up, transport and return your packages with care.
               </p>
             </div>
             <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -138,13 +135,111 @@ function LandingPage() {
               </div>
               <h3>Stay Updated</h3>
               <p>
-                Get real-time updates and photos so you always know where your
-                packages are.
+                Get real-time updates and photos so you always know where your packages are.
               </p>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Companies Section */}
+      {/* <section style={{ 
+        padding: '4rem 0', 
+        background: 'linear-gradient(135deg, #1e3a8a 0%, #0d9488 50%, #14b8a6 100%)',
+        margin: '2rem 0',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
+        position: 'relative'
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'radial-gradient(circle at 20% 50%, rgba(20, 184, 166, 0.15) 0%, transparent 50%)',
+          pointerEvents: 'none'
+        }}></div>
+        
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <h2 style={{ 
+            textAlign: 'center', 
+            marginBottom: '0.5rem', 
+            color: 'white',
+            padding: '0 2rem',
+            fontSize: '2.2rem',
+            fontWeight: '700',
+            textShadow: '0 2px 10px rgba(0, 0, 0, 0.2)'
+          }}>
+            
+          </h2>
+          <p style={{
+            textAlign: 'center',
+            color: 'rgba(255, 255, 255, 0.9)',
+            marginBottom: '3rem',
+            fontSize: '1.1rem',
+            fontWeight: '400'
+          }}>
+            No matter where you're shopping, haulzy can handle it.
+          </p>
+          
+          <div style={{
+            overflow: 'hidden',
+            position: 'relative',
+            padding: '2rem 0',
+            maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+            WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)'
+          }}>
+            <style>
+              {`
+                @keyframes scroll {
+                  0% {
+                    transform: translateX(0);
+                  }
+                  100% {
+                    transform: translateX(-50%);
+                  }
+                }
+                
+                .company-scroll {
+                  display: flex;
+                  animation: scroll 25s linear infinite;
+                  gap: 5rem;
+                }
+                
+                .company-scroll:hover {
+                  animation-play-state: paused;
+                }
+              `}
+            </style>
+            <div className="company-scroll">
+              {/* First set */}
+              {/* <div style={{ display: 'flex', gap: '5rem', alignItems: 'center' }}>
+                <img src="https://logo.clearbit.com/amazon.com" alt="Amazon logo" style={{height: '40px'}} />
+                <img src="https://cdn.simpleicons.org/nike/000000" alt="Nike logo" style={{height: '40px'}} />
+                <img src="https://cdn.simpleicons.org/adidas/000000" alt="Adidas logo" style={{height: '40px'}} />
+                <img src="https://logo.clearbit.com/hoka.com" alt="Hoka logo" style={{height: '40px'}} />
+                <img src="https://logo.clearbit.com/lululemon.com" alt="Lululemon logo" style={{height: '40px'}} />
+                <img src="https://logo.clearbit.com/walmart.com" alt="Walmart logo" style={{height: '40px'}} />
+                <img src="https://cdn.simpleicons.org/target/000000" alt="Target logo" style={{height: '40px'}} />
+                <img src="https://logo.clearbit.com/costco.com" alt="Costco logo" style={{height: '40px'}} />
+              </div>
+              {/* Duplicate set for seamless loop */}
+              {/* <div style={{ display: 'flex', gap: '5rem', alignItems: 'center' }}>
+                <img src="https://logo.clearbit.com/amazon.com" alt="Amazon logo" style={{height: '40px'}} />
+                <img src="https://cdn.simpleicons.org/nike/000000" alt="Nike logo" style={{height: '40px'}} />
+                <img src="https://cdn.simpleicons.org/adidas/000000" alt="Adidas logo" style={{height: '40px'}} />
+                <img src="https://logo.clearbit.com/hoka.com" alt="Hoka logo" style={{height: '40px'}} />
+                <img src="https://logo.clearbit.com/lululemon.com" alt="Lululemon logo" style={{height: '40px'}} />
+                <img src="https://cdn.simpleicons.org/walmart/000000" alt="Walmart logo" style={{height: '40px'}} />
+                <img src="https://cdn.simpleicons.org/target/000000" alt="Target logo" style={{height: '40px'}} />
+                <img src="https://logo.clearbit.com/costco.com" alt="Costco logo" style={{height: '40px'}} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section> */}
 
       {/* Pricing Section */}
       <section id="pricing" style={{ padding: '4rem 0', backgroundColor: 'white', margin: '2rem 0', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
@@ -152,7 +247,6 @@ function LandingPage() {
           <h2 style={{ textAlign: 'center', marginBottom: '3rem', color: 'var(--secondary-color)' }}>Simple, Transparent Pricing</h2>
           {/* Top row - Three main plans */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', maxWidth: '1200px', margin: '0 auto', marginBottom: '3rem' }}>
-            
             {/* One-Time Haul */}
             <div style={{ 
               backgroundColor: '#f8f9fa', 
@@ -171,9 +265,6 @@ function LandingPage() {
                 <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
                   <strong>1 pickup per month</strong>
                 </div>
-                {/* <div style={{ color: 'var(--accent-color)' }}>
-                  <strong>3 packages per pickup</strong>
-                </div> */}
               </div>
               <button 
                 onClick={() => handleSignup('onetime')}
@@ -192,7 +283,6 @@ function LandingPage() {
                 Get Started
               </button>
             </div>
-
             {/* Basic */}
             <div style={{ 
               backgroundColor: 'white', 
@@ -231,9 +321,6 @@ function LandingPage() {
                 <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
                   <strong>2 pickups per month</strong>
                 </div>
-                {/* <div style={{ color: 'var(--accent-color)' }}>
-                  <strong>5 packages per pickup</strong>
-                </div> */}
               </div>
               <button 
                 onClick={() => handleSignup('basic')}
@@ -252,7 +339,6 @@ function LandingPage() {
                 Choose Basic
               </button>
             </div>
-
             {/* Premium */}
             <div style={{ 
               backgroundColor: '#f8f9fa', 
@@ -275,9 +361,6 @@ function LandingPage() {
                 <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
                   <strong>Unlimited pickups</strong>
                 </div>
-                {/* <div style={{ color: 'var(--accent-color)' }}>
-                  <strong>8 packages per pickup</strong>
-                </div> */}
               </div>
               <button 
                 onClick={() => handleSignup('premium')}
@@ -297,7 +380,6 @@ function LandingPage() {
               </button>
             </div>
           </div>
-
           {/* Bottom row - Family plan centered */}
           {showFamilyPlan && (
             <div style={{ display: 'flex', justifyContent: 'center', maxWidth: '1200px', margin: '0 auto' }}>
@@ -378,7 +460,7 @@ function LandingPage() {
 
       {/* Final CTA */}
       <section className="hero-section" style={{ margin: '2rem 0' }}>
-        <h2>Ready to simplify your  returns?</h2>
+        <h2>Ready to simplify your returns?</h2>
         <p style={{ marginBottom: '2rem', opacity: '0.9' }}>
         </p>
         <button 
@@ -388,12 +470,9 @@ function LandingPage() {
         >
           Book your first haul
         </button>
-        {/* <p style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: '0.7' }}>
-          Up to 3 boxes free
-        </p> */}
       </section>
     </main>
   )
 }
 
-export default LandingPage 
+export default LandingPage
