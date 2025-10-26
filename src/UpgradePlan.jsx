@@ -199,6 +199,7 @@ function UpgradePlan() {
     <main className="main-content" style={{ padding: '0.5rem', minHeight: '100vh', position: 'relative' }}>
       {submitting && (
         <div
+          className="upgrade-overlay"
           style={{
             position: 'fixed',
             top: 0,
@@ -256,17 +257,85 @@ function UpgradePlan() {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
           }
+          
+          /* Dark mode support for UpgradePlan */
+          @media (prefers-color-scheme: dark) {
+            .upgrade-plan-container {
+              background-color: #1a1a1a !important;
+              color: #ffffff !important;
+            }
+            
+            .upgrade-plan-title {
+              color: #ffffff !important;
+            }
+            
+            .billing-toggle-container {
+              background-color: #2d2d2d !important;
+            }
+            
+            .billing-option {
+              color: #ffffff !important;
+            }
+            
+            .billing-option.active {
+              background-color: #3a3a3a !important;
+              box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1) !important;
+            }
+            
+            .billing-option-label {
+              color: #ffffff !important;
+            }
+            
+            .billing-option-sublabel {
+              color: rgba(255, 255, 255, 0.7) !important;
+            }
+            
+            .plan-card {
+              background: #2d2d2d !important;
+              border-color: #404040 !important;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+            }
+            
+            .plan-card.selected {
+              border-color: var(--primary-color) !important;
+              box-shadow: 0 4px 14px rgba(0, 191, 179, 0.25) !important;
+            }
+            
+            .plan-card h3 {
+              color: #ffffff !important;
+            }
+            
+            .plan-card li {
+              color: rgba(255, 255, 255, 0.8) !important;
+            }
+            
+            .plan-price-period {
+              color: rgba(255, 255, 255, 0.7) !important;
+            }
+            
+            .plan-yearly-note {
+              color: rgba(255, 255, 255, 0.6) !important;
+            }
+            
+            .upgrade-overlay {
+              background-color: rgba(26, 26, 26, 0.95) !important;
+            }
+            
+            .error-message {
+              color: #ff6b6b !important;
+            }
+          }
         `}
       </style>
       <section
-        className="form-container"
+        className="form-container upgrade-plan-container"
         style={{
           maxWidth: '800px',
           margin: '0 auto',
           padding: '2rem',
         }}
       >
-        <h1 style={{ 
+        <h1 className="upgrade-plan-title" style={{ 
           textAlign: 'center', 
           marginBottom: '2rem',
           color: 'var(--text-dark)',
@@ -289,6 +358,7 @@ function UpgradePlan() {
           }}
         >
           <div
+            className="billing-toggle-container"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -303,6 +373,7 @@ function UpgradePlan() {
           >
             {/* Monthly Option */}
             <div
+              className={`billing-option ${billingCycle === 'monthly' ? 'active' : ''}`}
               onClick={() => {
                 setBillingCycle('monthly')
                 if (selectedPlan === 'family') {
@@ -322,7 +393,7 @@ function UpgradePlan() {
                 transition: 'all 0.3s ease',
               }}
             >
-              <span style={{
+              <span className="billing-option-label" style={{
                 fontSize: '1rem',
                 fontWeight: billingCycle === 'monthly' ? 700 : 500,
                 color: billingCycle === 'monthly' ? 'var(--primary-color)' : 'var(--text-dark)',
@@ -330,7 +401,7 @@ function UpgradePlan() {
               }}>
                 Monthly
               </span>
-              <span style={{
+              <span className="billing-option-sublabel" style={{
                 fontSize: '0.85rem',
                 color: 'var(--text-dark)',
                 opacity: 0.7,
@@ -342,6 +413,7 @@ function UpgradePlan() {
 
             {/* Yearly Option */}
             <div
+              className={`billing-option ${billingCycle === 'yearly' ? 'active' : ''}`}
               onClick={() => setBillingCycle('yearly')}
               style={{
                 display: 'flex',
@@ -356,7 +428,7 @@ function UpgradePlan() {
                 transition: 'all 0.3s ease',
               }}
             >
-              <span style={{
+              <span className="billing-option-label" style={{
                 fontSize: '1rem',
                 fontWeight: billingCycle === 'yearly' ? 700 : 500,
                 color: billingCycle === 'yearly' ? 'var(--primary-color)' : 'var(--text-dark)',
@@ -364,7 +436,7 @@ function UpgradePlan() {
               }}>
                 Yearly
               </span>
-              <span style={{
+              <span className="billing-option-sublabel" style={{
                 fontSize: '0.85rem',
                 color: 'var(--text-dark)',
                 opacity: 0.7,
@@ -415,6 +487,7 @@ function UpgradePlan() {
               return (
                 <button
                   key={planId}
+                  className={`plan-card ${isSelected ? 'selected' : ''}`}
                   onClick={() => setSelectedPlan(planId)}
                   style={{ 
                     textAlign: 'left',
@@ -452,7 +525,7 @@ function UpgradePlan() {
 
                   <div style={{ marginTop: '0.5rem' }}>
                     <span style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--primary-color)' }}>{amount}</span>
-                    <span style={{ marginLeft: 6, color: 'var(--text-dark)', opacity: 0.7 }}>{period}</span>
+                    <span className="plan-price-period" style={{ marginLeft: 6, color: 'var(--text-dark)', opacity: 0.7 }}>{period}</span>
                   </div>
 
                   {planId === 'family' && (
@@ -462,7 +535,7 @@ function UpgradePlan() {
                   )}
 
                   {billingCycle === 'yearly' && plan.priceYearly && plan.priceMonthly && (
-                    <div style={{ marginTop: '0.35rem', fontSize: '0.85rem', color: 'var(--text-dark)', opacity: 0.6 }}>
+                    <div className="plan-yearly-note" style={{ marginTop: '0.35rem', fontSize: '0.85rem', color: 'var(--text-dark)', opacity: 0.6 }}>
                       <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>
                         ${(parseFloat(plan.priceMonthly.replace('$', '')) * 12).toFixed(2)}
                       </span>
@@ -480,7 +553,7 @@ function UpgradePlan() {
         </div>
 
         {error && (
-          <div style={{ 
+          <div className="error-message" style={{ 
             color: '#dc2626', 
             fontSize: '0.9rem', 
             fontFamily: 'var(--font-body)',
