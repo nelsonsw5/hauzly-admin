@@ -10,6 +10,14 @@ function Navigation() {
   const { user, isAdmin, logout } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
+  // Debug logging
+  console.log('Navigation Debug:', {
+    pathname: location.pathname,
+    isAdmin,
+    user: user ? 'logged in' : 'not logged in',
+    shouldHideButtons: isAdmin && (location.pathname === '/' || location.pathname === '/account')
+  })
+
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
   }
@@ -73,7 +81,8 @@ function Navigation() {
         
         <nav className={`nav-menu ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
           {/* Show Download and Pricing buttons on Login and Signup pages */}
-          {(location.pathname === '/' || location.pathname === '/signup' || location.pathname === '/login' || location.pathname === '/account') && (
+          {/* Hide Download and Pricing if admin is on landing page or account page */}
+          {(location.pathname === '/' || location.pathname === '/signup' || location.pathname === '/login' || location.pathname === '/account' || location.pathname === '/offer') && !(isAdmin && (location.pathname === '/' || location.pathname === '/account')) && (
             <Link 
               to="/download" 
               className="nav-link download-btn" 
@@ -82,7 +91,7 @@ function Navigation() {
               Download
             </Link>
           )}
-          {(location.pathname === '/' || location.pathname === '/download' || location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/account') && (
+          {(location.pathname === '/' || location.pathname === '/download' || location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/account' || location.pathname === '/offer') && !(isAdmin && (location.pathname === '/' || location.pathname === '/account')) && (
             <button 
               className="nav-link pricing-btn" 
               onClick={handlePricingClick}
@@ -95,6 +104,9 @@ function Navigation() {
             <>
               <Link to="/dashboard" className="nav-link admin-link" onClick={closeMobileMenu}>
                 Dashboard
+              </Link>
+              <Link to="/route-calendar" className="nav-link admin-link" onClick={closeMobileMenu}>
+                Route Calendar
               </Link>
               <Link to="/returns" className="nav-link admin-link" onClick={closeMobileMenu}>
                 Returns
@@ -123,7 +135,7 @@ function Navigation() {
             <Link to="/login" className="nav-link login-btn" onClick={closeMobileMenu}>
               Login
             </Link>
-          ) : (location.pathname === '/' || location.pathname === '/download') ? (
+          ) : (location.pathname === '/' || location.pathname === '/download' || location.pathname === '/offer') ? (
             <>
               <Link to="/signup" className="nav-link signup-btn" onClick={closeMobileMenu}>
                 Sign Up

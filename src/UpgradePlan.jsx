@@ -21,6 +21,7 @@ function UpgradePlan() {
   const [planType, setPlanType] = useState('subscription')
   const [billingCycle, setBillingCycle] = useState('yearly')
   const [selectedPlan, setSelectedPlan] = useState('basic')
+  const [promoCode, setPromoCode] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [userData, setUserData] = useState(null)
@@ -126,6 +127,14 @@ function UpgradePlan() {
     setSubmitting(true)
 
     try {
+      // Validate promo code if entered
+      if (promoCode.trim()) {
+        const validPromoCodes = ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'HAULZY-INFLUENCER'];
+        if (!validPromoCodes.includes(promoCode.trim().toUpperCase())) {
+          throw new Error(`Invalid promo code: "${promoCode}"`);
+        }
+      }
+
       const priceId = billingCycle === 'yearly' 
         ? subscriptionPlans[selectedPlan].priceYearlyId 
         : subscriptionPlans[selectedPlan].priceMonthlyId
@@ -133,10 +142,6 @@ function UpgradePlan() {
       if (!priceId) {
         throw new Error('Invalid plan selection')
       }
-
-      // Get promotion code from URL if present
-      const params = new URLSearchParams(location.search)
-      const promoCode = params.get('code')
 
       // Prepare the payload
       const payload = {
@@ -152,11 +157,7 @@ function UpgradePlan() {
           postal_code: userData.zip,
           country: 'US'
         },
-        ...(promoCode && {
-          discount: {
-            promotion_code: promoCode
-          }
-        })
+        ...(promoCode.trim() && { promotion_code: promoCode.trim().toUpperCase() })
       }
 
       // Process subscription purchase
@@ -256,74 +257,6 @@ function UpgradePlan() {
           @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
-          }
-          
-          /* Dark mode support for UpgradePlan */
-          @media (prefers-color-scheme: dark) {
-            .upgrade-plan-container {
-              background-color: #1a1a1a !important;
-              color: #ffffff !important;
-            }
-            
-            .upgrade-plan-title {
-              color: #ffffff !important;
-            }
-            
-            .billing-toggle-container {
-              background-color: #2d2d2d !important;
-            }
-            
-            .billing-option {
-              color: #ffffff !important;
-            }
-            
-            .billing-option.active {
-              background-color: #3a3a3a !important;
-              box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1) !important;
-            }
-            
-            .billing-option-label {
-              color: #ffffff !important;
-            }
-            
-            .billing-option-sublabel {
-              color: rgba(255, 255, 255, 0.7) !important;
-            }
-            
-            .plan-card {
-              background: #2d2d2d !important;
-              border-color: #404040 !important;
-              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
-            }
-            
-            .plan-card.selected {
-              border-color: var(--primary-color) !important;
-              box-shadow: 0 4px 14px rgba(0, 191, 179, 0.25) !important;
-            }
-            
-            .plan-card h3 {
-              color: #ffffff !important;
-            }
-            
-            .plan-card li {
-              color: rgba(255, 255, 255, 0.8) !important;
-            }
-            
-            .plan-price-period {
-              color: rgba(255, 255, 255, 0.7) !important;
-            }
-            
-            .plan-yearly-note {
-              color: rgba(255, 255, 255, 0.6) !important;
-            }
-            
-            .upgrade-overlay {
-              background-color: rgba(26, 26, 26, 0.95) !important;
-            }
-            
-            .error-message {
-              color: #ff6b6b !important;
-            }
           }
         `}
       </style>
@@ -464,92 +397,102 @@ function UpgradePlan() {
           </div>
         </div>
 
-        {/* Subscription Plans grid */}
+        {/* Basic Subscription Plan - Single Option */}
         <div
           style={{ 
-            display: 'grid',
-            gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: window.innerWidth <= 768 ? '0.75rem' : '1rem',
-            width: '100%',
-            marginBottom: '2rem'
+            maxWidth: '400px',
+            margin: '0 auto 2rem',
+            width: '100%'
           }} 
         >
-          {Object.entries(subscriptionPlans)
-            .filter(([planId]) => {
-              // Hide family plan if toggle is off
-              if (planId === 'family' && !showFamilyPlan) return false
-              // Only show family plan on yearly billing
-              return billingCycle === 'yearly' || planId !== 'family'
-            })
-            .map(([planId, plan]) => {
-              const { amount, period } = getDisplayPrice(planId)
-              const isSelected = selectedPlan === planId
-              return (
-                <button
-                  key={planId}
-                  className={`plan-card ${isSelected ? 'selected' : ''}`}
-                  onClick={() => setSelectedPlan(planId)}
-                  style={{ 
-                    textAlign: 'left',
-                    border: `2px solid ${isSelected ? 'var(--primary-color)' : 'var(--border-color)'}`,
-                    background: 'var(--text-light)',
-                    borderRadius: '12px',
-                    padding: '1rem', 
-                    cursor: 'pointer',
-                    boxShadow: isSelected ? '0 4px 14px rgba(0, 191, 179, 0.15)' : '0 2px 4px rgba(0, 45, 71, 0.05)',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ margin: 0, color: 'var(--text-dark)', fontFamily: 'var(--font-heading)' }}>{plan.name}</h3>
-                    {isSelected && (
-                      <span
-                        aria-hidden
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: 28,
-                          height: 28,
-                          borderRadius: '50%',
-                          background: 'var(--primary-color)',
-                          color: 'var(--text-light)',
-                          fontWeight: 700,
-                          boxShadow: '0 2px 4px rgba(0, 191, 179, 0.3)',
-                        }}
-                      >
-                        ✓
-                      </span>
-                    )}
-                  </div>
+          {subscriptionPlans.basic && (
+            <div
+              className="plan-card selected"
+              style={{ 
+                textAlign: 'center',
+                border: '2px solid var(--primary-color)',
+                background: 'var(--text-light)',
+                borderRadius: '12px',
+                padding: '1.5rem', 
+                boxShadow: '0 4px 14px rgba(0, 191, 179, 0.15)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-dark)', fontFamily: 'var(--font-heading)', fontSize: '1.5rem' }}>
+                Basic Subscription
+              </h3>
 
-                  <div style={{ marginTop: '0.5rem' }}>
-                    <span style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--primary-color)' }}>{amount}</span>
-                    <span className="plan-price-period" style={{ marginLeft: 6, color: 'var(--text-dark)', opacity: 0.7 }}>{period}</span>
-                  </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--primary-color)' }}>
+                  {getDisplayPrice('basic').amount}
+                </span>
+                <span className="plan-price-period" style={{ marginLeft: 6, color: 'var(--text-dark)', opacity: 0.7, fontSize: '1.1rem' }}>
+                  {getDisplayPrice('basic').period}
+                </span>
+              </div>
 
-                  {planId === 'family' && (
-                    <div style={{ marginTop: '0.35rem', fontSize: '0.85rem', color: 'var(--primary-color)', fontWeight: 600 }}>
-                      *only for yearly subscriptions
-                    </div>
-                  )}
+              {billingCycle === 'yearly' && subscriptionPlans.basic.priceYearly && subscriptionPlans.basic.priceMonthly && (
+                <div className="plan-yearly-note" style={{ marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--text-dark)', opacity: 0.6 }}>
+                  <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>
+                    ${(parseFloat(subscriptionPlans.basic.priceMonthly.replace('$', '')) * 12).toFixed(2)}
+                  </span>
+                  <span style={{ marginLeft: '8px', color: 'var(--primary-color)', fontWeight: 600 }}>Save 10%</span>
+                </div>
+              )}
 
-                  {billingCycle === 'yearly' && plan.priceYearly && plan.priceMonthly && (
-                    <div className="plan-yearly-note" style={{ marginTop: '0.35rem', fontSize: '0.85rem', color: 'var(--text-dark)', opacity: 0.6 }}>
-                      <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>
-                        ${(parseFloat(plan.priceMonthly.replace('$', '')) * 12).toFixed(2)}
-                      </span>
-                    </div>
-                  )}
+              <ul style={{ margin: '0', padding: 0, listStyle: 'none', textAlign: 'left' }}>
+                {subscriptionPlans.basic.features.map((f, idx) => (
+                  <li key={idx} style={{ color: 'var(--text-dark)', opacity: 0.8, fontFamily: 'var(--font-body)', marginBottom: '0.5rem', fontSize: '1rem' }}>
+                    ✓ {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
 
-                  <ul style={{ margin: '0.75rem 0 0 1rem', padding: 0 }}>
-                    {plan.features.map((f, idx) => (
-                      <li key={idx} style={{ color: 'var(--text-dark)', opacity: 0.8, fontFamily: 'var(--font-body)' }}>✓ {f}</li>
-                    ))}
-                  </ul>
-                </button>
-              )
-            })}
+        {/* Promo Code Input */}
+        <div style={{ 
+          maxWidth: '400px', 
+          margin: '0 auto 1.5rem',
+          position: 'relative'
+        }}>
+          <input 
+            type="text" 
+            placeholder="Promo Code (optional)" 
+            value={promoCode} 
+            onChange={(e) => setPromoCode(e.target.value.toUpperCase())} 
+            style={{
+              width: '100%',
+              padding: '0.875rem 1rem',
+              border: '1px solid var(--border-color)',
+              borderRadius: '8px',
+              fontSize: '1rem',
+              fontFamily: 'var(--font-body)',
+              color: 'var(--text-dark)',
+              backgroundColor: 'var(--text-light)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              outline: 'none',
+              transition: 'border-color 0.2s ease',
+              boxSizing: 'border-box'
+            }} 
+          />
+          {promoCode && ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'HAULZY-INFLUENCER'].includes(promoCode.toUpperCase()) && (
+            <span style={{
+              position: 'absolute',
+              right: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--primary-color)',
+              fontWeight: '600',
+              fontSize: '0.85rem',
+              backgroundColor: 'rgba(0, 191, 179, 0.1)',
+              padding: '4px 8px',
+              borderRadius: '4px'
+            }}>
+              {promoCode.toUpperCase() === 'HAULZY-INFLUENCER' ? '1 year free' : '2 months free'}
+            </span>
+          )}
         </div>
 
         {error && (

@@ -18,6 +18,8 @@ import CheckoutCancel from './CheckoutCancel.jsx'
 import ManageAccount from './ManageAccount.jsx'
 import UpgradePlan from './UpgradePlan.jsx'
 import DeleteAccount from './DeleteAccount.jsx'
+import OfferPage from './OfferPage.jsx'
+import RouteCalendar from './RouteCalendar.jsx'
 
 const router = createBrowserRouter([
   // Checkout routes at top-level (no navigation/footer)
@@ -40,6 +42,7 @@ const router = createBrowserRouter([
       { path: 'privacy', element: <PrivacyPolicy /> },
       { path: 'terms', element: <Terms /> },
       { path: 'download', element: <Download /> },
+      { path: 'offer', element: <OfferPage /> },
       { path: 'account', element: (
         <ProtectedRoute>
           <ManageAccount />
@@ -64,6 +67,11 @@ const router = createBrowserRouter([
       { path: 'users', element: (
         <AdminRoute>
           <Users />
+        </AdminRoute>
+      ) },
+      { path: 'route-calendar', element: (
+        <AdminRoute>
+          <RouteCalendar />
         </AdminRoute>
       ) },
     ],

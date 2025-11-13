@@ -35,7 +35,7 @@ function LandingPage() {
         >
           <button
             className="cta-primary"
-            onClick={() => navigate('/download')}
+            onClick={() => navigate('/offer')}
           >
             Try it out
           </button>
@@ -466,7 +466,7 @@ function LandingPage() {
         <button 
           className="cta-primary" 
           style={{ fontSize: '1.2rem', padding: '1rem 2rem' }}
-          onClick={() => handleSignup('onetime')}
+          onClick={() => navigate('/offer')}
         >
           Book your first haul
         </button>

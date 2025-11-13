@@ -14,6 +14,9 @@ const FIREBASE_FUNCTIONS_BASE_URL = import.meta.env.VITE_FIREBASE_URL
 // Toggle to show/hide Family plan - set to false to hide it
 const showFamilyPlan = false
 
+// Toggle to show/hide Premium plan - set to false to hide it
+const showPremiumPlan = false
+
 function SignUp() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -22,7 +25,7 @@ function SignUp() {
   const [priceData, setPriceData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [planType, setPlanType] = useState(location.state?.selectedPlan === 'onetime' ? 'onetime' : 'subscription')
-  const [billingCycle, setBillingCycle] = useState('yearly')
+  const [billingCycle, setBillingCycle] = useState('monthly')
   const [selectedPlan, setSelectedPlan] = useState('basic')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -35,6 +38,7 @@ function SignUp() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [receiveTextUpdates, setReceiveTextUpdates] = useState(false)
+  const [promoCode, setPromoCode] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -124,6 +128,14 @@ function SignUp() {
     setSubmitting(true);
 
     try {
+      // Validate promo code if entered
+      if (promoCode.trim() && planType === 'subscription') {
+        const validPromoCodes = ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'HAULZY-INFLUENCER'];
+        if (!validPromoCodes.includes(promoCode.trim().toUpperCase())) {
+          throw new Error(`Invalid promo code: "${promoCode}"`);
+        }
+      }
+
       // Validate password match
       if (password !== confirmPassword) {
         throw new Error('Passwords do not match');
@@ -223,13 +235,6 @@ function SignUp() {
       }
       console.log('💰 Selected price ID:', priceId);
 
-      // Handle promotion code
-      console.group('🏷️ Promotion Code Processing');
-      const params = new URLSearchParams(location.search);
-      const promoCode = params.get('code');
-      console.log('🎫 Promotion code:', promoCode || 'None');
-      console.groupEnd();
-
       // Prepare checkout payload
       console.group('📦 Checkout Payload');
       const payload = {
@@ -245,11 +250,7 @@ function SignUp() {
           postal_code: zip.trim(),
           country: 'US'
         },
-        ...(promoCode && {
-          discount: {
-            promotion_code: promoCode
-          }
-        })
+        ...(promoCode.trim() && { promotion_code: promoCode.trim().toUpperCase() })
       };
       console.log('📄 Final payload:', payload);
       console.groupEnd();
@@ -616,10 +617,14 @@ function SignUp() {
                   .filter(([planId]) => {
                     // Hide family plan if toggle is off
                     if (planId === 'family' && !showFamilyPlan) return false
+                    // Hide premium plan if toggle is off
+                    if (planId === 'premium' && !showPremiumPlan) return false
                     // Only show family plan on yearly billing
                     return billingCycle === 'yearly' || planId !== 'family'
                   })
                   .map(([planId, plan]) => {
+                  // Rename "Basic" to "Subscription"
+                  const displayName = planId === 'basic' ? 'Subscription' : plan.name
                   const { amount, period } = getDisplayPrice(planId)
                   const isSelected = selectedPlan === planId
                   return (
@@ -638,7 +643,7 @@ function SignUp() {
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h3 style={{ margin: 0, color: 'var(--text-dark)', fontFamily: 'var(--font-heading)' }}>{plan.name}</h3>
+                        <h3 style={{ margin: 0, color: 'var(--text-dark)', fontFamily: 'var(--font-heading)' }}>{displayName}</h3>
                         {isSelected && (
                           <span
                             aria-hidden
@@ -771,6 +776,39 @@ function SignUp() {
 
             <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} style={inputStyle} />
             <input type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} style={inputStyle} />
+
+            {/* Promo Code Input - Only show for subscription plans */}
+            {planType === 'subscription' && (
+              <div style={{ position: 'relative' }}>
+                <input 
+                  type="text" 
+                  placeholder="Promo Code (optional)" 
+                  value={promoCode} 
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())} 
+                  style={{
+                    ...inputStyle,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }} 
+                />
+                {promoCode && ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'HAULZY-INFLUENCER'].includes(promoCode.toUpperCase()) && (
+                  <span style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--primary-color)',
+                    fontWeight: '600',
+                    fontSize: '0.85rem',
+                    backgroundColor: 'rgba(0, 191, 179, 0.1)',
+                    padding: '4px 8px',
+                    borderRadius: '4px'
+                  }}>
+                    {promoCode.toUpperCase() === 'HAULZY-INFLUENCER' ? '1 year free' : '2 months free'}
+                  </span>
+                )}
+              </div>
+            )}
 
             <label style={{ 
                 display: 'flex', 
