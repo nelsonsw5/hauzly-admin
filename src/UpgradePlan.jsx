@@ -25,6 +25,7 @@ function UpgradePlan() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [userData, setUserData] = useState(null)
+  const [showPremiumPlan, setShowPremiumPlan] = useState(false)
 
   // Helper functions
   const getDisplayPrice = (planId) => {
@@ -67,6 +68,34 @@ function UpgradePlan() {
 
     fetchUserData()
   }, [navigate])
+
+  // Fetch premium feature flag
+  useEffect(() => {
+    async function fetchPremiumFeatureFlag() {
+      try {
+        const premiumFlagRef = doc(db, 'feature_flags', 'premium')
+        const premiumFlagDoc = await getDoc(premiumFlagRef)
+        
+        if (premiumFlagDoc.exists()) {
+          const flagData = premiumFlagDoc.data()
+          console.log('Premium feature flag:', flagData)
+          // Check for either 'show' or 'enabled' field
+          const isEnabled = flagData.show === true || flagData.enabled === true
+          setShowPremiumPlan(isEnabled)
+        } else {
+          console.log('No premium feature flag found, defaulting to true')
+          // Default to true if no flag exists (backward compatibility)
+          setShowPremiumPlan(true)
+        }
+      } catch (err) {
+        console.error('Error fetching premium feature flag:', err)
+        // Default to true on error (backward compatibility)
+        setShowPremiumPlan(true)
+      }
+    }
+
+    fetchPremiumFeatureFlag()
+  }, [])
 
   // Fetch price data from Firestore
   useEffect(() => {
@@ -129,15 +158,22 @@ function UpgradePlan() {
     try {
       // Validate promo code if entered
       if (promoCode.trim()) {
-        const validPromoCodes = ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'HAULZY-INFLUENCER'];
+        const validPromoCodes = ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'CAMI', 'MIKAELA', 'JEZNI', 'HAULZY-INFLUENCER', 'INFLUENCER'];
         if (!validPromoCodes.includes(promoCode.trim().toUpperCase())) {
           throw new Error(`Invalid promo code: "${promoCode}"`);
         }
       }
 
-      const priceId = billingCycle === 'yearly' 
+      let priceId = billingCycle === 'yearly' 
         ? subscriptionPlans[selectedPlan].priceYearlyId 
         : subscriptionPlans[selectedPlan].priceMonthlyId
+
+      // Special promo code mapping for Basic Yearly plan
+      const specialPromoCodes = ['CAMI', 'CHELSEA', 'CAROLINE', 'LEXI', 'MIKAELA', 'JEZNI', 'HOLIDAYS'];
+      if (selectedPlan === 'basic' && billingCycle === 'yearly' && promoCode.trim() && specialPromoCodes.includes(promoCode.trim().toUpperCase())) {
+        console.log('🎟️ Special promo code detected, mapping to price_1SSAUJ7TZwWADd5cLUKUPRYM');
+        priceId = 'price_1SSAUJ7TZwWADd5cLUKUPRYM';
+      }
 
       if (!priceId) {
         throw new Error('Invalid plan selection')
@@ -397,28 +433,70 @@ function UpgradePlan() {
           </div>
         </div>
 
-        {/* Basic Subscription Plan - Single Option */}
+        {/* Plan Selection Cards */}
         <div
           style={{ 
-            maxWidth: '400px',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '1.5rem',
+            maxWidth: '900px',
             margin: '0 auto 2rem',
             width: '100%'
           }} 
         >
+          {/* Basic Plan */}
           {subscriptionPlans.basic && (
             <div
-              className="plan-card selected"
+              onClick={() => setSelectedPlan('basic')}
+              className={`plan-card ${selectedPlan === 'basic' ? 'selected' : ''}`}
               style={{ 
                 textAlign: 'center',
-                border: '2px solid var(--primary-color)',
+                border: selectedPlan === 'basic' ? '3px solid var(--primary-color)' : '2px solid var(--border-color)',
                 background: 'var(--text-light)',
                 borderRadius: '12px',
                 padding: '1.5rem', 
-                boxShadow: '0 4px 14px rgba(0, 191, 179, 0.15)',
+                boxShadow: selectedPlan === 'basic' ? '0 6px 20px rgba(0, 191, 179, 0.25)' : '0 2px 8px rgba(0, 45, 71, 0.08)',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                position: 'relative',
+                transform: selectedPlan === 'basic' ? 'scale(1.02)' : 'scale(1)',
+              }}
+              onMouseEnter={(e) => {
+                if (selectedPlan !== 'basic') {
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 45, 71, 0.12)'
+                  e.currentTarget.style.transform = 'scale(1.02)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedPlan !== 'basic') {
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 45, 71, 0.08)'
+                  e.currentTarget.style.transform = 'scale(1)'
+                }
               }}
             >
+              {selectedPlan === 'basic' && (
+                <div style={{
+                  position: 'absolute',
+                  top: '-10px',
+                  right: '-10px',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--primary-color)',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 700,
+                  fontSize: '1.2rem',
+                  boxShadow: '0 2px 8px rgba(0, 191, 179, 0.4)'
+                }}>
+                  ✓
+                </div>
+              )}
+              
               <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-dark)', fontFamily: 'var(--font-heading)', fontSize: '1.5rem' }}>
-                Basic Subscription
+                Basic
               </h3>
 
               <div style={{ marginBottom: '1rem' }}>
@@ -441,7 +519,107 @@ function UpgradePlan() {
 
               <ul style={{ margin: '0', padding: 0, listStyle: 'none', textAlign: 'left' }}>
                 {subscriptionPlans.basic.features.map((f, idx) => (
-                  <li key={idx} style={{ color: 'var(--text-dark)', opacity: 0.8, fontFamily: 'var(--font-body)', marginBottom: '0.5rem', fontSize: '1rem' }}>
+                  <li key={idx} style={{ color: 'var(--text-dark)', opacity: 0.8, fontFamily: 'var(--font-body)', marginBottom: '0.5rem', fontSize: '0.95rem' }}>
+                    ✓ {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Premium Plan */}
+          {showPremiumPlan && subscriptionPlans.premium && (
+            <div
+              onClick={() => setSelectedPlan('premium')}
+              className={`plan-card ${selectedPlan === 'premium' ? 'selected' : ''}`}
+              style={{ 
+                textAlign: 'center',
+                border: selectedPlan === 'premium' ? '3px solid var(--primary-color)' : '2px solid var(--border-color)',
+                background: 'var(--text-light)',
+                borderRadius: '12px',
+                padding: '1.5rem', 
+                boxShadow: selectedPlan === 'premium' ? '0 6px 20px rgba(0, 191, 179, 0.25)' : '0 2px 8px rgba(0, 45, 71, 0.08)',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                position: 'relative',
+                transform: selectedPlan === 'premium' ? 'scale(1.02)' : 'scale(1)',
+              }}
+              onMouseEnter={(e) => {
+                if (selectedPlan !== 'premium') {
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 45, 71, 0.12)'
+                  e.currentTarget.style.transform = 'scale(1.02)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedPlan !== 'premium') {
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 45, 71, 0.08)'
+                  e.currentTarget.style.transform = 'scale(1)'
+                }
+              }}
+            >
+              {selectedPlan === 'premium' && (
+                <div style={{
+                  position: 'absolute',
+                  top: '-10px',
+                  right: '-10px',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--primary-color)',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 700,
+                  fontSize: '1.2rem',
+                  boxShadow: '0 2px 8px rgba(0, 191, 179, 0.4)'
+                }}>
+                  ✓
+                </div>
+              )}
+              
+              <div style={{
+                position: 'absolute',
+                top: '12px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                backgroundColor: 'var(--primary-color)',
+                color: 'white',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                padding: '0.35rem 0.75rem',
+                borderRadius: '999px',
+                boxShadow: '0 2px 4px rgba(0, 191, 179, 0.3)',
+                whiteSpace: 'nowrap'
+              }}>
+                MOST POPULAR
+              </div>
+              
+              <h3 style={{ margin: '2rem 0 1rem 0', color: 'var(--text-dark)', fontFamily: 'var(--font-heading)', fontSize: '1.5rem' }}>
+                Premium
+              </h3>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--primary-color)' }}>
+                  {getDisplayPrice('premium').amount}
+                </span>
+                <span className="plan-price-period" style={{ marginLeft: 6, color: 'var(--text-dark)', opacity: 0.7, fontSize: '1.1rem' }}>
+                  {getDisplayPrice('premium').period}
+                </span>
+              </div>
+
+              {billingCycle === 'yearly' && subscriptionPlans.premium.priceYearly && subscriptionPlans.premium.priceMonthly && (
+                <div className="plan-yearly-note" style={{ marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--text-dark)', opacity: 0.6 }}>
+                  <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>
+                    ${(parseFloat(subscriptionPlans.premium.priceMonthly.replace('$', '')) * 12).toFixed(2)}
+                  </span>
+                  <span style={{ marginLeft: '8px', color: 'var(--primary-color)', fontWeight: 600 }}>Save 10%</span>
+                </div>
+              )}
+
+              <ul style={{ margin: '0', padding: 0, listStyle: 'none', textAlign: 'left' }}>
+                {subscriptionPlans.premium.features.map((f, idx) => (
+                  <li key={idx} style={{ color: 'var(--text-dark)', opacity: 0.8, fontFamily: 'var(--font-body)', marginBottom: '0.5rem', fontSize: '0.95rem' }}>
                     ✓ {f}
                   </li>
                 ))}
@@ -477,7 +655,7 @@ function UpgradePlan() {
               boxSizing: 'border-box'
             }} 
           />
-          {promoCode && ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'HAULZY-INFLUENCER'].includes(promoCode.toUpperCase()) && (
+          {promoCode && ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'CAMI', 'MIKAELA', 'JEZNI', 'HAULZY-INFLUENCER', 'INFLUENCER'].includes(promoCode.toUpperCase()) && (
             <span style={{
               position: 'absolute',
               right: '12px',
@@ -490,7 +668,7 @@ function UpgradePlan() {
               padding: '4px 8px',
               borderRadius: '4px'
             }}>
-              {promoCode.toUpperCase() === 'HAULZY-INFLUENCER' ? '1 year free' : '2 months free'}
+              {promoCode.toUpperCase() === 'HAULZY-INFLUENCER' ? '1 year free' : promoCode.toUpperCase() === 'INFLUENCER' ? '3 months free' : '2 months free'}
             </span>
           )}
         </div>

@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { collection, getDocs, doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore'
-import { db } from './firebase'
+import { collection, getDocs, doc, updateDoc, serverTimestamp, getDoc, deleteField } from 'firebase/firestore'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { db, storage } from './firebase'
 import './App.css'
 
 const FIREBASE_FUNCTIONS_BASE_URL = import.meta.env.VITE_FIREBASE_URL
+const FIREBASE_PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID
+const IS_DEV = FIREBASE_PROJECT_ID?.includes('dev') || FIREBASE_PROJECT_ID?.includes('development')
 
 function toDateMaybe(value) {
   if (!value) {
@@ -117,7 +120,7 @@ function Returns() {
   const [customers, setCustomers] = useState({}) // Store customer data by customerId
   const [returnLocations, setReturnLocations] = useState([]) // Store return locations for filter
 
-  const [statusFilter, setStatusFilter] = useState('all') // all | hauled_off | scanned | rejected
+  const [statusFilter, setStatusFilter] = useState('hauled_off') // all | hauled_off | scanned | rejected
   const [dropoffFilter, setDropoffFilter] = useState('all') // all | specific location id
   const [selectedItem, setSelectedItem] = useState(null)
   const [term, setTerm] = useState('')
@@ -134,6 +137,15 @@ function Returns() {
   
   // Add loading state for item status updates
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  
+  // Add receipt upload state
+  const [showReceiptUpload, setShowReceiptUpload] = useState(null)
+  const [receiptFile, setReceiptFile] = useState(null)
+  const [receiptPreview, setReceiptPreview] = useState(null)
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false)
+  
+  // Add email label dummy modal state
+  const [showEmailLabelModal, setShowEmailLabelModal] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -394,10 +406,7 @@ function Returns() {
   }
 
   function closeQrCodeModal() {
-    // Store the item for the action popup if the item is not already processed
-    if (qrCodeModal?.item && qrCodeModal.item.status !== 'Rejected' && qrCodeModal.item.status !== 'Scanned') {
-      setShowActionPopupAfterQR(qrCodeModal.item)
-    }
+    // Just close the QR code modal - receipt upload is now manual via button
     setQrCodeModal(null)
   }
 
@@ -410,6 +419,127 @@ function Returns() {
 
   function cancelActionAfterQR() {
     setShowActionPopupAfterQR(null)
+  }
+
+  function handleReceiptFileChange(e) {
+    const file = e.target.files[0]
+    if (file) {
+      setReceiptFile(file)
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file)
+      setReceiptPreview(previewUrl)
+    }
+  }
+
+  async function handleReceiptUpload() {
+    if (!receiptFile || !showReceiptUpload) {
+      // If no file selected, just close the modal
+      closeReceiptUploadModal()
+      return
+    }
+
+    setIsUploadingReceipt(true)
+    try {
+      // Create a reference to the storage location
+      const timestamp = Date.now()
+      const fileName = `receipt_${showReceiptUpload.id}_${timestamp}.${receiptFile.name.split('.').pop()}`
+      // Use dev-receipts for dev environment, receipts for production
+      const storagePath = IS_DEV ? `dev-receipts/${showReceiptUpload.id}/${fileName}` : `receipts/${showReceiptUpload.id}/${fileName}`
+      const storageRef = ref(storage, storagePath)
+
+      // Upload the file
+      await uploadBytes(storageRef, receiptFile)
+
+      // Get the download URL
+      const downloadURL = await getDownloadURL(storageRef)
+
+      // Update the item document with the receipt
+      await updateDoc(doc(db, 'items', showReceiptUpload.id), {
+        receipt: {
+          url: downloadURL
+        }
+      })
+
+      // Update local state
+      setItems(prev => prev.map(it => 
+        it.id === showReceiptUpload.id 
+          ? { ...it, receipt: { url: downloadURL } } 
+          : it
+      ))
+
+      // Close the modal and show action popup
+      closeReceiptUploadModal()
+      
+      // Show action popup if item is not already processed
+      if (showReceiptUpload.status !== 'Rejected' && showReceiptUpload.status !== 'Scanned') {
+        setShowActionPopupAfterQR(showReceiptUpload)
+      }
+    } catch (err) {
+      console.error('Error uploading receipt:', err)
+      alert(err?.message || 'Failed to upload receipt')
+    } finally {
+      setIsUploadingReceipt(false)
+    }
+  }
+
+  function closeReceiptUploadModal() {
+    // Clean up preview URL
+    if (receiptPreview) {
+      URL.revokeObjectURL(receiptPreview)
+    }
+    setShowReceiptUpload(null)
+    setReceiptFile(null)
+    setReceiptPreview(null)
+  }
+
+  function skipReceiptUpload() {
+    closeReceiptUploadModal()
+    // Show action popup if item is not already processed
+    if (showReceiptUpload && showReceiptUpload.status !== 'Rejected' && showReceiptUpload.status !== 'Scanned') {
+      setShowActionPopupAfterQR(showReceiptUpload)
+    }
+  }
+
+  async function handleRemoveReceipt() {
+    if (!showReceiptUpload || !showReceiptUpload.receipt?.url) {
+      return
+    }
+
+    const confirmRemove = window.confirm('Are you sure you want to remove this receipt? This action cannot be undone.')
+    if (!confirmRemove) return
+
+    setIsUploadingReceipt(true)
+    try {
+      // Update the item document to remove the receipt
+      await updateDoc(doc(db, 'items', showReceiptUpload.id), {
+        receipt: deleteField()
+      })
+
+      // Update local state
+      setItems(prev => prev.map(it => {
+        if (it.id === showReceiptUpload.id) {
+          const { receipt, ...itemWithoutReceipt } = it
+          return itemWithoutReceipt
+        }
+        return it
+      }))
+
+      alert('Receipt removed successfully')
+      closeReceiptUploadModal()
+    } catch (err) {
+      console.error('Error removing receipt:', err)
+      alert(err?.message || 'Failed to remove receipt')
+    } finally {
+      setIsUploadingReceipt(false)
+    }
+  }
+
+  async function handleEmailLabel(item, e) {
+    if (e) {
+      e.stopPropagation()
+    }
+
+    setShowEmailLabelModal(true)
   }
 
   return (
@@ -600,6 +730,45 @@ function Returns() {
                               </div>
                             </div>
                           )}
+
+                          {/* Receipt */}
+                          {item.receipt?.url && (
+                            <div style={{ marginBottom: '1rem' }}>
+                              <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'black' }}>Receipt:</div>
+                              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                <div style={{ position: 'relative' }}>
+                                  <img 
+                                    src={item.receipt.url} 
+                                    alt="Receipt" 
+                                    style={{ 
+                                      width: '120px', 
+                                      height: '120px', 
+                                      objectFit: 'cover', 
+                                      borderRadius: '12px', 
+                                      border: '1px solid var(--border-color)',
+                                      cursor: 'pointer',
+                                      transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open(item.receipt.url, '_blank');
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.target.style.transform = 'scale(1.05)';
+                                      e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.target.style.transform = 'scale(1)';
+                                      e.target.style.boxShadow = 'none';
+                                    }}
+                                    onError={(e) => {
+                                      e.target.style.display = 'none'
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           
                           <div style={{ color: 'black', fontSize: '0.9rem' }}>
                             <div>Customer: {item.customer ? `${item.customer.firstName || ''} ${item.customer.lastName || ''}`.trim() || item.pickupCustomerName || '—' : item.pickupCustomerName || '—'}</div>
@@ -642,13 +811,57 @@ function Returns() {
                           <span style={{ backgroundColor: statusPillColor(status), color: 'white', padding: '0.25rem 0.6rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 700 }}>{status}</span>
                         </div>
 
-                        {/* Only show action buttons if item is not "Rejected" or "Scanned" */}
-                        {status !== 'Rejected' && status !== 'Scanned' && (
-                          <div className="returns-item-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-start', flexWrap: 'wrap' }}>
-                            <button onClick={(e) => { e.stopPropagation(); handleButtonClick(item, 'could_not_be_scanned') }} style={{ padding: '0.75rem 1rem', border: 'none', borderRadius: '6px', background: '#dc2626', color: 'white', cursor: 'pointer', fontSize: '0.9rem', minHeight: '44px', minWidth: '44px' }}>Could Not Be Scanned</button>
-                            <button onClick={(e) => { e.stopPropagation(); handleButtonClick(item, 'returned') }} style={{ padding: '0.75rem 1rem', border: 'none', borderRadius: '6px', background: 'var(--primary-color)', color: 'white', cursor: 'pointer', fontSize: '0.9rem', minHeight: '44px', minWidth: '44px' }}>Mark Returned</button>
-                          </div>
-                        )}
+                        {/* Action buttons */}
+                        <div className="returns-item-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-start', flexWrap: 'wrap' }}>
+                          {/* Upload Receipt Button - Always show */}
+                          <button 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setShowReceiptUpload(item);
+                            }} 
+                            style={{ 
+                              padding: '0.75rem 1rem', 
+                              border: '1px solid var(--border-color)', 
+                              borderRadius: '6px', 
+                              background: 'white', 
+                              color: 'black', 
+                              cursor: 'pointer', 
+                              fontSize: '0.9rem', 
+                              minHeight: '44px', 
+                              minWidth: '44px',
+                              fontWeight: '500'
+                            }}
+                          >
+                            {item.receipt?.url ? 'Update Receipt' : 'Upload Receipt'}
+                          </button>
+
+                          {/* Email Label Button - Always show */}
+                          <button 
+                            onClick={(e) => handleEmailLabel(item, e)} 
+                            style={{ 
+                              padding: '0.75rem 1rem', 
+                              border: '1px solid #10b981', 
+                              borderRadius: '6px', 
+                              background: 'white', 
+                              color: '#10b981', 
+                              cursor: 'pointer', 
+                              fontSize: '0.9rem', 
+                              minHeight: '44px', 
+                              minWidth: '44px',
+                              fontWeight: '600'
+                            }}
+                          >
+                            Email Label
+                          </button>
+                          
+                          {/* Only show status action buttons if item is not "Rejected" or "Scanned" */}
+                          {status !== 'Rejected' && status !== 'Scanned' && (
+                            <>
+                              <button onClick={(e) => { e.stopPropagation(); handleButtonClick(item, 'could_not_be_scanned') }} style={{ padding: '0.75rem 1rem', border: 'none', borderRadius: '6px', background: '#dc2626', color: 'white', cursor: 'pointer', fontSize: '0.9rem', minHeight: '44px', minWidth: '44px' }}>Could Not Be Scanned</button>
+                              <button onClick={(e) => { e.stopPropagation(); handleButtonClick(item, 'returned') }} style={{ padding: '0.75rem 1rem', border: 'none', borderRadius: '6px', background: 'var(--primary-color)', color: 'white', cursor: 'pointer', fontSize: '0.9rem', minHeight: '44px', minWidth: '44px' }}>Mark Returned</button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </li>
                   )
@@ -775,6 +988,45 @@ function Returns() {
                   </div>
                 </div>
               )}
+
+              {/* Receipt in Modal */}
+              {selectedItem.receipt?.url && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'black' }}>Receipt:</div>
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative' }}>
+                      <img 
+                        src={selectedItem.receipt.url} 
+                        alt="Receipt" 
+                        style={{ 
+                          width: '120px', 
+                          height: '120px', 
+                          objectFit: 'cover', 
+                          borderRadius: '12px', 
+                          border: '1px solid var(--border-color)',
+                          cursor: 'pointer',
+                          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(selectedItem.receipt.url, '_blank');
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.transform = 'scale(1.05)';
+                          e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.transform = 'scale(1)';
+                          e.target.style.boxShadow = 'none';
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none'
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div style={{ color: 'black', fontSize: '0.9rem' }}>
                 <div>Customer: {selectedItem.customer ? `${selectedItem.customer.firstName || ''} ${selectedItem.customer.lastName || ''}`.trim() || selectedItem.pickupCustomerName || '—' : selectedItem.pickupCustomerName || '—'}</div>
@@ -813,9 +1065,13 @@ function Returns() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-between', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               <button
-                onClick={() => setSelectedItem(null)}
+                onClick={() => {
+                  setShowReceiptUpload(selectedItem);
+                  setSelectedItem(null);
+                }}
                 style={{
                   padding: '0.75rem 1.5rem',
                   border: '1px solid var(--border-color)',
@@ -825,50 +1081,89 @@ function Returns() {
                   cursor: 'pointer',
                   fontSize: '1rem',
                   minHeight: '44px',
-                  minWidth: '44px'
+                  minWidth: '44px',
+                  fontWeight: '500'
                 }}
               >
-                Cancel
+                {selectedItem.receipt?.url ? 'Update Receipt' : 'Upload Receipt'}
               </button>
-              {/* Only show action buttons if item is not "Rejected" or "Scanned" */}
-              {selectedItem.status !== 'Rejected' && selectedItem.status !== 'Scanned' && (
-                <>
-                  <button
-                    onClick={() => handleButtonClick(selectedItem, 'could_not_be_scanned')}
-                    style={{
-                      padding: '0.75rem 1.5rem',
-                      border: 'none',
-                      borderRadius: '6px',
-                      background: '#dc2626',
-                      color: 'white',
-                      cursor: 'pointer',
-                      fontSize: '1rem',
-                      minHeight: '44px',
-                      minWidth: '44px',
-                      fontWeight: '600'
-                    }}
-                  >
-                    Could Not Be Scanned
-                  </button>
-                  <button
-                    onClick={() => handleButtonClick(selectedItem, 'returned')}
-                    style={{
-                      padding: '0.75rem 1.5rem',
-                      border: 'none',
-                      borderRadius: '6px',
-                      background: 'var(--primary-color)',
-                      color: 'white',
-                      cursor: 'pointer',
-                      fontSize: '1rem',
-                      minHeight: '44px',
-                      minWidth: '44px',
-                      fontWeight: '600'
-                    }}
-                  >
-                    Mark Returned
-                  </button>
-                </>
-              )}
+
+                <button
+                  onClick={() => handleEmailLabel(selectedItem)}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    border: '1px solid #10b981',
+                    borderRadius: '6px',
+                    background: 'white',
+                    color: '#10b981',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    minHeight: '44px',
+                    minWidth: '44px',
+                    fontWeight: '600'
+                  }}
+                >
+                  Email Label
+                </button>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '6px',
+                    background: 'white',
+                    color: 'black',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    minHeight: '44px',
+                    minWidth: '44px'
+                  }}
+                >
+                  Cancel
+                </button>
+                {/* Only show action buttons if item is not "Rejected" or "Scanned" */}
+                {selectedItem.status !== 'Rejected' && selectedItem.status !== 'Scanned' && (
+                  <>
+                    <button
+                      onClick={() => handleButtonClick(selectedItem, 'could_not_be_scanned')}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        border: 'none',
+                        borderRadius: '6px',
+                        background: '#dc2626',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '1rem',
+                        minHeight: '44px',
+                        minWidth: '44px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Could Not Be Scanned
+                    </button>
+                    <button
+                      onClick={() => handleButtonClick(selectedItem, 'returned')}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        border: 'none',
+                        borderRadius: '6px',
+                        background: 'var(--primary-color)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '1rem',
+                        minHeight: '44px',
+                        minWidth: '44px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Mark Returned
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1211,6 +1506,307 @@ function Returns() {
             }}>
               Please wait while we process your request...
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Receipt Upload Modal */}
+      {showReceiptUpload && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1003,
+          padding: '1rem'
+        }} onClick={skipReceiptUpload}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '2rem',
+            maxWidth: '500px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ color: 'black', marginBottom: '1rem', fontSize: '1.5rem' }}>
+              Upload Receipt
+            </h2>
+            
+            <p style={{ color: 'black', marginBottom: '1.5rem', fontSize: '1rem' }}>
+              Would you like to upload a receipt for <strong>{showReceiptUpload.name || showReceiptUpload.itemDescription}</strong>?
+            </p>
+
+            {/* File input */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleReceiptFileChange}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '2px dashed var(--border-color)',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.95rem'
+                }}
+              />
+            </div>
+
+            {/* Preview */}
+            {receiptPreview && (
+              <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'black' }}>Preview:</div>
+                <img
+                  src={receiptPreview}
+                  alt="Receipt preview"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '300px',
+                    objectFit: 'contain',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)'
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Show existing receipt if available */}
+            {showReceiptUpload.receipt?.url && !receiptFile && (
+              <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'black' }}>Current Receipt:</div>
+                <img
+                  src={showReceiptUpload.receipt.url}
+                  alt="Current receipt"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '300px',
+                    objectFit: 'contain',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)'
+                  }}
+                />
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: showReceiptUpload.receipt?.url ? 'space-between' : 'flex-end', flexWrap: 'wrap' }}>
+              {/* Remove Receipt button - only show if there's an existing receipt */}
+              {showReceiptUpload.receipt?.url && (
+                <button
+                  onClick={handleRemoveReceipt}
+                  disabled={isUploadingReceipt}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    border: '1px solid #dc2626',
+                    borderRadius: '6px',
+                    background: 'white',
+                    color: '#dc2626',
+                    cursor: isUploadingReceipt ? 'not-allowed' : 'pointer',
+                    fontSize: '1rem',
+                    minHeight: '44px',
+                    minWidth: '44px',
+                    fontWeight: '600',
+                    opacity: isUploadingReceipt ? 0.5 : 1
+                  }}
+                >
+                  Remove Receipt
+                </button>
+              )}
+              
+              <div style={{ display: 'flex', gap: '1rem', marginLeft: 'auto' }}>
+              <button
+                onClick={skipReceiptUpload}
+                disabled={isUploadingReceipt}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '6px',
+                  background: 'white',
+                  color: 'black',
+                  cursor: isUploadingReceipt ? 'not-allowed' : 'pointer',
+                  fontSize: '1rem',
+                  minHeight: '44px',
+                  minWidth: '44px',
+                  opacity: isUploadingReceipt ? 0.5 : 1
+                }}
+              >
+                Skip
+              </button>
+              <button
+                onClick={handleReceiptUpload}
+                disabled={isUploadingReceipt}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  border: 'none',
+                  borderRadius: '6px',
+                  background: 'var(--primary-color)',
+                  color: 'white',
+                  cursor: isUploadingReceipt ? 'not-allowed' : 'pointer',
+                  fontSize: '1rem',
+                  minHeight: '44px',
+                  minWidth: '44px',
+                  fontWeight: '600',
+                  opacity: isUploadingReceipt ? 0.5 : 1
+                }}
+              >
+                {isUploadingReceipt ? 'Uploading...' : (receiptFile ? 'Upload Receipt' : 'Continue')}
+              </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Modal for Receipt Upload */}
+      {isUploadingReceipt && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1005,
+          padding: '1rem'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '3rem 2rem',
+            maxWidth: '350px',
+            width: '100%',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: '1.5rem'
+            }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                border: '4px solid #f3f4f6',
+                borderTop: '4px solid var(--primary-color)',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }}></div>
+            </div>
+            
+            <h2 style={{ 
+              color: 'black', 
+              marginBottom: '0.5rem', 
+              fontSize: '1.25rem',
+              fontWeight: '600'
+            }}>
+              Uploading Receipt
+            </h2>
+            
+            <p style={{ 
+              color: '#666', 
+              fontSize: '0.95rem', 
+              margin: 0,
+              lineHeight: '1.5'
+            }}>
+              Please wait while we upload your receipt...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Email Label Dummy Modal */}
+      {showEmailLabelModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1006,
+          padding: '1rem',
+          animation: 'fadeIn 0.2s ease-in'
+        }} onClick={() => setShowEmailLabelModal(false)}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            padding: '2.5rem',
+            maxWidth: '450px',
+            width: '100%',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            textAlign: 'center',
+            animation: 'slideUp 0.3s ease-out'
+          }} onClick={(e) => e.stopPropagation()}>
+            {/* Emoji/Icon */}
+            <div style={{
+              fontSize: '4rem',
+              marginBottom: '1rem',
+              animation: 'bounce 0.6s ease-in-out'
+            }}>
+              🎉
+            </div>
+            
+            <h2 style={{ 
+              color: 'black', 
+              marginBottom: '1rem', 
+              fontSize: '1.75rem',
+              fontWeight: '700'
+            }}>
+              Good Job!
+            </h2>
+            
+            <p style={{ 
+              color: '#666', 
+              fontSize: '1.1rem', 
+              margin: '0 0 2rem 0',
+              lineHeight: '1.6'
+            }}>
+              You pushed a button that doesn't do anything
+            </p>
+
+            <button
+              onClick={() => setShowEmailLabelModal(false)}
+              style={{
+                padding: '0.875rem 2rem',
+                border: 'none',
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, var(--primary-color) 0%, #00a396 100%)',
+                color: 'white',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                fontWeight: '600',
+                minHeight: '48px',
+                minWidth: '120px',
+                boxShadow: '0 4px 12px rgba(0, 167, 179, 0.3)',
+                transition: 'all 0.2s ease',
+                transform: 'translateY(0)'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 6px 16px rgba(0, 167, 179, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 4px 12px rgba(0, 167, 179, 0.3)';
+              }}
+            >
+              Awesome!
+            </button>
           </div>
         </div>
       )}

@@ -1,5 +1,8 @@
 import './App.css'
 import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from './firebase'
 import pickupImage from './assets/pickup-phone.png'
 import screenRecordingVideo from './assets/schedule-pickup.MP4'
 import packageReceivedVideo from './assets/package-received.mov'
@@ -10,8 +13,66 @@ function LandingPage() {
   // Toggle to show/hide Family plan - set to false to hide it
   const showFamilyPlan = false
 
+  // State for price data
+  const [priceData, setPriceData] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  // Fetch price data from Firestore
+  useEffect(() => {
+    async function fetchPriceData() {
+      try {
+        const settingsRef = doc(db, 'settings', 'products')
+        const settingsDoc = await getDoc(settingsRef)
+        
+        if (settingsDoc.exists()) {
+          const data = settingsDoc.data()
+          console.log('Landing page - Price data loaded:', data)
+          setPriceData(data)
+        } else {
+          console.error('No products document found')
+        }
+      } catch (err) {
+        console.error('Error fetching price data:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPriceData()
+  }, [])
+
+  // Extract plan data
+  const subscriptionPlans = priceData?.subscriptionPlans || {}
+  const oneTimePlan = priceData?.oneTimePlan || {}
+  const basicPlan = subscriptionPlans.basic || {}
+  const premiumPlan = subscriptionPlans.premium || {}
+  const familyPlan = subscriptionPlans.family || {}
+
   const handleSignup = (plan) => {
     navigate('/signup', { state: { plan } })
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh',
+        backgroundColor: '#FFFCF5'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ 
+            fontSize: '1.5rem', 
+            color: 'var(--primary-color)',
+            marginBottom: '1rem'
+          }}>
+            Loading...
+          </div>
+          <p style={{ color: 'var(--accent-color)' }}>Getting pricing information</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -242,29 +303,44 @@ function LandingPage() {
       </section> */}
 
       {/* Pricing Section */}
-      <section id="pricing" style={{ padding: '4rem 0', backgroundColor: 'white', margin: '2rem 0', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
-        <div style={{ padding: '0 2rem' }}>
+      <section id="pricing" style={{ padding: '4rem 2rem', backgroundColor: 'white', margin: '2rem auto', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', maxWidth: '1400px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <h2 style={{ textAlign: 'center', marginBottom: '3rem', color: 'var(--secondary-color)' }}>Simple, Transparent Pricing</h2>
           {/* Top row - Three main plans */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', maxWidth: '1200px', margin: '0 auto', marginBottom: '3rem' }}>
-            {/* One-Time Haul */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', justifyItems: 'center', marginBottom: '3rem' }}>
+            {/* Pay per Haul */}
             <div style={{ 
               backgroundColor: '#f8f9fa', 
               padding: '2rem', 
               borderRadius: '12px', 
               border: '2px solid #e9ecef',
               textAlign: 'center',
-              position: 'relative'
+              position: 'relative',
+              width: '100%',
+              maxWidth: '350px'
             }}>
-              <h3 style={{ color: 'var(--secondary-color)', marginBottom: '1rem' }}>One-Time Haul</h3>
+              <h3 style={{ color: 'var(--secondary-color)', marginBottom: '1rem' }}>Pay per Haul</h3>
               <div style={{ marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>$4.99</span>
-                <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>per haul</span>
+                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>{oneTimePlan.priceMonthly || '$4.99'}</span>
+                <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>{oneTimePlan.periodMonthly || 'per haul'}</span>
               </div>
               <div style={{ marginBottom: '2rem' }}>
-                <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
-                  <strong>1 pickup per month</strong>
-                </div>
+                {oneTimePlan.features && oneTimePlan.features.length > 0 ? (
+                  <div style={{ 
+                    textAlign: 'center',
+                    color: 'var(--accent-color)'
+                  }}>
+                    {oneTimePlan.features.slice(0, 2).map((feature, idx) => (
+                      <div key={idx} style={{ marginBottom: '0.5rem' }}>
+                        <strong>{feature}</strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
+                    <strong>Purchase whenever you need a pickup</strong>
+                  </div>
+                )}
               </div>
               <button 
                 onClick={() => handleSignup('onetime')}
@@ -292,7 +368,9 @@ function LandingPage() {
               textAlign: 'center',
               position: 'relative',
               transform: 'scale(1.05)',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+              width: '100%',
+              maxWidth: '350px'
             }}>
               <div style={{ 
                 position: 'absolute', 
@@ -310,17 +388,41 @@ function LandingPage() {
               </div>
               <h3 style={{ color: 'var(--secondary-color)', marginBottom: '1rem' }}>Basic</h3>
               <div style={{ marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>$7.99</span>
-                <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>/month</span>
+                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>{basicPlan.priceMonthly || '$7.99'}</span>
+                <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>{basicPlan.periodMonthly || '/month'}</span>
               </div>
               <div style={{ marginBottom: '1rem', color: 'var(--accent-color)', fontSize: '0.9rem' }}>
-                <span style={{ textDecoration: 'line-through', opacity: '0.7' }}>$96.00</span>
-                <span style={{ marginLeft: '0.5rem', color: 'var(--primary-color)', fontWeight: '600' }}>$86.99/year</span>
+                <span style={{ textDecoration: 'line-through', opacity: '0.7' }}>
+                  ${(parseFloat(basicPlan.priceMonthly?.replace('$', '') || '7.99') * 12).toFixed(2)}
+                </span>
+                <span style={{ marginLeft: '0.5rem', color: 'var(--primary-color)', fontWeight: '600' }}>
+                  {basicPlan.priceYearly || '$86.99'}/year
+                </span>
               </div>
               <div style={{ marginBottom: '2rem' }}>
-                <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
-                  <strong>2 pickups per month</strong>
-                </div>
+                {basicPlan.features && basicPlan.features.length > 0 ? (
+                  <div style={{ 
+                    textAlign: 'center',
+                    color: 'var(--accent-color)'
+                  }}>
+                    {basicPlan.features
+                      .filter(f => 
+                        f.toLowerCase().includes('pickup') || 
+                        f.toLowerCase().includes('haul')
+                      )
+                      .slice(0, 1)
+                      .map((feature, idx) => (
+                        <div key={idx} style={{ marginBottom: '0.5rem' }}>
+                          <strong>{feature}</strong>
+                        </div>
+                      ))
+                    }
+                  </div>
+                ) : (
+                  <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
+                    <strong>2 pickups per month</strong>
+                  </div>
+                )}
               </div>
               <button 
                 onClick={() => handleSignup('basic')}
@@ -346,38 +448,157 @@ function LandingPage() {
               borderRadius: '12px', 
               border: '2px solid #e9ecef',
               textAlign: 'center',
-              position: 'relative'
+              position: 'relative',
+              width: '100%',
+              maxWidth: '350px'
             }}>
               <h3 style={{ color: 'var(--secondary-color)', marginBottom: '1rem' }}>Premium</h3>
               <div style={{ marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>$14.99</span>
-                <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>/month</span>
+                <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>{premiumPlan.priceMonthly || '$14.99'}</span>
+                <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>{premiumPlan.periodMonthly || '/month'}</span>
               </div>
               <div style={{ marginBottom: '1rem', color: 'var(--accent-color)', fontSize: '0.9rem' }}>
-                <span style={{ textDecoration: 'line-through', opacity: '0.7' }}>$180.00</span>
-                <span style={{ marginLeft: '0.5rem', color: 'var(--primary-color)', fontWeight: '600' }}>$161.99/year</span>
+                <span style={{ textDecoration: 'line-through', opacity: '0.7' }}>
+                  ${(parseFloat(premiumPlan.priceMonthly?.replace('$', '') || '14.99') * 12).toFixed(2)}
+                </span>
+                <span style={{ marginLeft: '0.5rem', color: 'var(--primary-color)', fontWeight: '600' }}>
+                  {premiumPlan.priceYearly || '$161.99'}/year
+                </span>
               </div>
               <div style={{ marginBottom: '2rem' }}>
-                <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
-                  <strong>Unlimited pickups</strong>
-                </div>
+                {premiumPlan.features && premiumPlan.features.length > 0 ? (
+                  <>
+                    {/* Show unlimited pickups feature prominently if it exists */}
+                    {premiumPlan.features.some(f => 
+                      f.toLowerCase().includes('unlimited pickup') || 
+                      f.toLowerCase().includes('unlimited haul')
+                    ) && (
+                      <div style={{ 
+                        marginBottom: '1rem', 
+                        color: 'var(--accent-color)', 
+                        textAlign: 'center',
+                        fontSize: '1.05rem'
+                      }}>
+                        {premiumPlan.features
+                          .filter(f => 
+                            f.toLowerCase().includes('unlimited pickup') || 
+                            f.toLowerCase().includes('unlimited haul')
+                          )
+                          .slice(0, 1)
+                          .map((feature, idx) => (
+                            <strong key={idx}>{feature}</strong>
+                          ))
+                        }
+                      </div>
+                    )}
+                    {/* Show all other premium features */}
+                    <div style={{ 
+                      textAlign: 'left',
+                      padding: '0 0.5rem'
+                    }}>
+                      {premiumPlan.features
+                        .filter(f => 
+                          !f.toLowerCase().includes('unlimited pickup') && 
+                          !f.toLowerCase().includes('unlimited haul')
+                        )
+                        .map((feature, idx) => (
+                          <div key={idx} style={{ 
+                            marginBottom: '0.65rem', 
+                            color: 'var(--accent-color)',
+                            fontSize: '0.95rem',
+                            lineHeight: '1.4',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '0.5rem'
+                          }}>
+                            <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', flexShrink: 0 }}>✓</span>
+                            <span>{feature}</span>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ 
+                      marginBottom: '1rem', 
+                      color: 'var(--accent-color)', 
+                      textAlign: 'center',
+                      fontSize: '1.05rem'
+                    }}>
+                      <strong>Unlimited pickups</strong>
+                    </div>
+                    <div style={{ 
+                      textAlign: 'left',
+                      padding: '0 0.5rem'
+                    }}>
+                      <div style={{ 
+                        marginBottom: '0.65rem', 
+                        color: 'var(--accent-color)',
+                        fontSize: '0.95rem',
+                        lineHeight: '1.4',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', flexShrink: 0 }}>✓</span>
+                        <span>Hassle-free Costco returns</span>
+                      </div>
+                      <div style={{ 
+                        marginBottom: '0.65rem', 
+                        color: 'var(--accent-color)',
+                        fontSize: '0.95rem',
+                        lineHeight: '1.4',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', flexShrink: 0 }}>✓</span>
+                        <span>Sell ineligible items on FB Marketplace</span>
+                      </div>
+                      <div style={{ 
+                        marginBottom: '0.65rem', 
+                        color: 'var(--accent-color)',
+                        fontSize: '0.95rem',
+                        lineHeight: '1.4',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', flexShrink: 0 }}>✓</span>
+                        <span>Free packaging materials provided</span>
+                      </div>
+                      <div style={{ 
+                        marginBottom: '0.65rem', 
+                        color: 'var(--accent-color)',
+                        fontSize: '0.95rem',
+                        lineHeight: '1.4',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', flexShrink: 0 }}>✓</span>
+                        <span>Print and attach your return labels</span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
-              <button 
-                onClick={() => handleSignup('premium')}
+              <div 
                 style={{
-                  backgroundColor: 'var(--primary-color)',
-                  color: 'white',
-                  border: 'none',
+                  backgroundColor: 'rgba(0, 191, 179, 0.1)',
+                  color: 'var(--primary-color)',
+                  border: '2px solid var(--primary-color)',
                   padding: '0.75rem 1.5rem',
                   borderRadius: '8px',
                   fontSize: '1rem',
                   fontWeight: '600',
-                  cursor: 'pointer',
-                  width: '100%'
+                  width: '100%',
+                  textAlign: 'center'
                 }}
               >
-                Go Premium
-              </button>
+                Coming Soon
+              </div>
             </div>
           </div>
           {/* Bottom row - Family plan centered */}
@@ -411,19 +632,42 @@ function LandingPage() {
                 </div>
                 <h3 style={{ color: 'var(--secondary-color)', marginBottom: '1rem' }}>Family</h3>
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>$154.99</span>
-                  <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>/year</span>
+                  <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>{familyPlan.priceYearly || '$154.99'}</span>
+                  <span style={{ color: 'var(--accent-color)', marginLeft: '0.5rem' }}>{familyPlan.periodYearly || '/year'}</span>
                 </div>
                 <div style={{ marginBottom: '1rem', color: 'var(--accent-color)', fontSize: '0.9rem' }}>
                   <span style={{ color: 'var(--primary-color)', fontWeight: '600' }}>*only for yearly subscriptions</span>
                 </div>
                 <div style={{ marginBottom: '2rem' }}>
-                  <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
-                    <strong>Up to 6 people</strong>
-                  </div>
-                  <div style={{ color: 'var(--accent-color)' }}>
-                    <strong>Unlimited pickups</strong>
-                  </div>
+                  {familyPlan.features && familyPlan.features.length > 0 ? (
+                    <div style={{ 
+                      textAlign: 'center',
+                      color: 'var(--accent-color)'
+                    }}>
+                      {familyPlan.features
+                        .filter(f => 
+                          f.toLowerCase().includes('people') || 
+                          f.toLowerCase().includes('family') ||
+                          f.toLowerCase().includes('unlimited')
+                        )
+                        .slice(0, 2)
+                        .map((feature, idx) => (
+                          <div key={idx} style={{ marginBottom: '0.5rem' }}>
+                            <strong>{feature}</strong>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
+                        <strong>Up to 6 people</strong>
+                      </div>
+                      <div style={{ color: 'var(--accent-color)' }}>
+                        <strong>Unlimited pickups</strong>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <button 
                   onClick={() => handleSignup('family')}

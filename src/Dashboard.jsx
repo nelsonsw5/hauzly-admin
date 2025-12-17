@@ -86,6 +86,10 @@ function Dashboard() {
   // Selection state for filtering
   const [selectedRoute, setSelectedRoute] = useState(null)
   const [selectedPickup, setSelectedPickup] = useState(null)
+  
+  // Modal state for item details
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [showItemModal, setShowItemModal] = useState(false)
 
   // Create items lookup map
   const itemsMap = useMemo(() => {
@@ -726,7 +730,13 @@ function Dashboard() {
                     const status = (item.status || 'unknown').toString()
                     
                 return (
-                      <li key={item.id} style={{ 
+                      <li 
+                        key={item.id} 
+                        onClick={() => {
+                          setSelectedItem(item)
+                          setShowItemModal(true)
+                        }}
+                        style={{ 
                         display: 'flex', 
                         flexDirection: 'column',
                         gap: '0.5rem',
@@ -782,17 +792,47 @@ function Dashboard() {
                             {item.description}
                         </div>
                       )}
-                        <div style={{ color: 'var(--accent-color)', fontSize: '0.85rem' }}>
-                          📦 {item.pickupReference || 'Unknown'}
-                      </div>
+                        {item.dropoffLocation?.type && (
+                          <div style={{ 
+                            color: '#002D47', 
+                            fontSize: '0.85rem', 
+                            fontWeight: 600,
+                            backgroundColor: 'rgba(0, 45, 71, 0.1)',
+                            padding: '0.5rem',
+                            borderRadius: '6px',
+                            display: 'inline-block'
+                          }}>
+                            📍 {item.dropoffLocation.type}
+                          </div>
+                        )}
+                        {item.requiresBox && (
+                          <div style={{ 
+                            color: '#00A7B3', 
+                            fontSize: '0.85rem', 
+                            fontWeight: 600,
+                            backgroundColor: 'rgba(0, 167, 179, 0.1)',
+                            padding: '0.5rem',
+                            borderRadius: '6px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}>
+                            📦 Requires a box
+                          </div>
+                        )}
                         {item.pickupAddress && (
                           <div style={{ color: 'var(--accent-color)', fontSize: '0.8rem' }}>
                             📍 {item.pickupAddress}
                     </div>
                         )}
-                        {item.size && (
+                        {item.estimatedSize && (
                           <div style={{ color: 'var(--accent-color)', fontSize: '0.8rem' }}>
-                            📏 {item.size} cubic ft
+                            📏 Size: {item.estimatedSize}
+                    </div>
+                        )}
+                        {item.estimatedWeight && (
+                          <div style={{ color: 'var(--accent-color)', fontSize: '0.8rem' }}>
+                            ⚖️ Weight: {item.estimatedWeight}
                     </div>
                         )}
                       </li>
@@ -808,6 +848,369 @@ function Dashboard() {
             </div>
         </section>
           </div>
+
+      {/* Item Details Modal */}
+      {showItemModal && selectedItem && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+          }}
+          onClick={() => setShowItemModal(false)}
+        >
+          <div 
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              maxWidth: '800px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{
+              padding: '1.5rem',
+              borderBottom: '1px solid var(--border-color)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              position: 'sticky',
+              top: 0,
+              backgroundColor: 'white',
+              zIndex: 1
+            }}>
+              <h2 style={{ margin: 0, color: 'var(--secondary-color)' }}>Item Details</h2>
+              <button
+                onClick={() => setShowItemModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: 'var(--accent-color)',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '4px',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ padding: '1.5rem' }}>
+              {/* Status Badge */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <span style={{ 
+                  backgroundColor: statusPillColor(selectedItem.status), 
+                  color: 'white', 
+                  padding: '0.5rem 1rem', 
+                  borderRadius: '999px', 
+                  fontSize: '0.9rem', 
+                  fontWeight: 700
+                }}>
+                  {selectedItem.status}
+                </span>
+              </div>
+
+              {/* Images Section */}
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: selectedItem.qrCode?.url ? '1fr 1fr' : '1fr',
+                gap: '1rem',
+                marginBottom: '1.5rem'
+              }}>
+                {selectedItem.photo?.url && (
+                  <div>
+                    <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--secondary-color)', marginBottom: '0.5rem' }}>
+                      Package Photo
+                    </h3>
+                    <img 
+                      src={selectedItem.photo.url} 
+                      alt="Package" 
+                      style={{ 
+                        width: '100%', 
+                        height: '250px', 
+                        objectFit: 'cover', 
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)'
+                      }}
+                    />
+                  </div>
+                )}
+                {selectedItem.qrCode?.url && (
+                  <div>
+                    <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--secondary-color)', marginBottom: '0.5rem' }}>
+                      QR Code
+                    </h3>
+                    <img 
+                      src={selectedItem.qrCode.url} 
+                      alt="QR Code" 
+                      style={{ 
+                        width: '100%', 
+                        height: '250px', 
+                        objectFit: 'contain', 
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        backgroundColor: '#f9fafb'
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Details Grid */}
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                gap: '1rem',
+                marginBottom: '1.5rem'
+              }}>
+                {/* Packaging Status */}
+                {selectedItem.packagingStatus && (
+                  <div style={{ 
+                    padding: '1rem', 
+                    backgroundColor: '#f9fafb', 
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)'
+                  }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--accent-color)', marginBottom: '0.25rem' }}>
+                      Packaging Status
+                    </div>
+                    <div style={{ fontWeight: 600, color: 'var(--secondary-color)' }}>
+                      {selectedItem.packagingStatus}
+                    </div>
+                  </div>
+                )}
+
+                {/* Estimated Size */}
+                {selectedItem.estimatedSize && (
+                  <div style={{ 
+                    padding: '1rem', 
+                    backgroundColor: '#f9fafb', 
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)'
+                  }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--accent-color)', marginBottom: '0.25rem' }}>
+                      📏 Estimated Size
+                    </div>
+                    <div style={{ fontWeight: 600, color: 'var(--secondary-color)' }}>
+                      {selectedItem.estimatedSize}
+                    </div>
+                  </div>
+                )}
+
+                {/* Estimated Weight */}
+                {selectedItem.estimatedWeight && (
+                  <div style={{ 
+                    padding: '1rem', 
+                    backgroundColor: '#f9fafb', 
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)'
+                  }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--accent-color)', marginBottom: '0.25rem' }}>
+                      ⚖️ Estimated Weight
+                    </div>
+                    <div style={{ fontWeight: 600, color: 'var(--secondary-color)' }}>
+                      {selectedItem.estimatedWeight}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quantity */}
+                {selectedItem.quantity && (
+                  <div style={{ 
+                    padding: '1rem', 
+                    backgroundColor: '#f9fafb', 
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)'
+                  }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--accent-color)', marginBottom: '0.25rem' }}>
+                      Quantity
+                    </div>
+                    <div style={{ fontWeight: 600, color: 'var(--secondary-color)' }}>
+                      {selectedItem.quantity}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Description */}
+              {selectedItem.description && (
+                <div style={{ 
+                  padding: '1rem', 
+                  backgroundColor: '#f9fafb', 
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-color)',
+                  marginBottom: '1rem'
+                }}>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--accent-color)', marginBottom: '0.5rem' }}>
+                    Description
+                  </div>
+                  <div style={{ color: 'var(--secondary-color)', lineHeight: '1.5' }}>
+                    {selectedItem.description}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {selectedItem.notes && selectedItem.notes.trim() && (
+                <div style={{ 
+                  padding: '1rem', 
+                  backgroundColor: '#f9fafb', 
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-color)',
+                  marginBottom: '1rem'
+                }}>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--accent-color)', marginBottom: '0.5rem' }}>
+                    Notes
+                  </div>
+                  <div style={{ color: 'var(--secondary-color)', lineHeight: '1.5' }}>
+                    {selectedItem.notes}
+                  </div>
+                </div>
+              )}
+
+              {/* Requires Box */}
+              {selectedItem.requiresBox && (
+                <div style={{ 
+                  padding: '1rem', 
+                  backgroundColor: 'rgba(0, 167, 179, 0.1)', 
+                  borderRadius: '8px',
+                  border: '1px solid #00A7B3',
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <span style={{ fontSize: '1.5rem' }}>📦</span>
+                  <span style={{ color: '#00A7B3', fontWeight: 600 }}>
+                    Requires a box
+                  </span>
+                </div>
+              )}
+
+              {/* Dropoff Location */}
+              {selectedItem.dropoffLocation && (selectedItem.dropoffLocation.type || selectedItem.dropoffLocation.address) && (
+                <div style={{ 
+                  padding: '1rem', 
+                  backgroundColor: '#f9fafb', 
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-color)',
+                  marginBottom: '1rem'
+                }}>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--accent-color)', marginBottom: '0.5rem' }}>
+                    📍 Dropoff Location
+                  </div>
+                  <div style={{ color: 'var(--secondary-color)' }}>
+                    {selectedItem.dropoffLocation.type && (
+                      <div style={{ fontWeight: 600, marginBottom: selectedItem.dropoffLocation.address ? '0.25rem' : '0' }}>
+                        {selectedItem.dropoffLocation.type}
+                      </div>
+                    )}
+                    {selectedItem.dropoffLocation.address && selectedItem.dropoffLocation.address !== null && (
+                      <div>
+                        {selectedItem.dropoffLocation.address}
+                        {selectedItem.dropoffLocation.city && selectedItem.dropoffLocation.state && (
+                          <>, {selectedItem.dropoffLocation.city}, {selectedItem.dropoffLocation.state} {selectedItem.dropoffLocation.zip}</>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Pickup Address */}
+              {selectedItem.pickupAddress && (
+                <div style={{ 
+                  padding: '1rem', 
+                  backgroundColor: '#f9fafb', 
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-color)',
+                  marginBottom: '1rem'
+                }}>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--accent-color)', marginBottom: '0.5rem' }}>
+                    📍 Pickup Address
+                  </div>
+                  <div style={{ color: 'var(--secondary-color)' }}>
+                    {selectedItem.pickupAddress}
+                  </div>
+                </div>
+              )}
+
+              {/* Timestamps */}
+              {(selectedItem.createdAt || selectedItem.updatedAt) && (
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '1rem',
+                  paddingTop: '1rem',
+                  borderTop: '1px solid var(--border-color)'
+                }}>
+                  {selectedItem.createdAt && (
+                    <div style={{ 
+                      padding: '1rem', 
+                      backgroundColor: '#f9fafb', 
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)'
+                    }}>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--accent-color)', marginBottom: '0.25rem' }}>
+                        Created At
+                      </div>
+                      <div style={{ fontSize: '0.9rem', color: 'var(--secondary-color)', fontWeight: 600 }}>
+                        {new Date(selectedItem.createdAt).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {selectedItem.updatedAt && (
+                    <div style={{ 
+                      padding: '1rem', 
+                      backgroundColor: '#f9fafb', 
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)'
+                    }}>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--accent-color)', marginBottom: '0.25rem' }}>
+                        Updated At
+                      </div>
+                      <div style={{ fontSize: '0.9rem', color: 'var(--secondary-color)', fontWeight: 600 }}>
+                        {new Date(selectedItem.updatedAt).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

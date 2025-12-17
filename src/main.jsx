@@ -20,6 +20,7 @@ import UpgradePlan from './UpgradePlan.jsx'
 import DeleteAccount from './DeleteAccount.jsx'
 import OfferPage from './OfferPage.jsx'
 import RouteCalendar from './RouteCalendar.jsx'
+import Finance from './Finance.jsx'
 
 const router = createBrowserRouter([
   // Checkout routes at top-level (no navigation/footer)
@@ -72,6 +73,11 @@ const router = createBrowserRouter([
       { path: 'route-calendar', element: (
         <AdminRoute>
           <RouteCalendar />
+        </AdminRoute>
+      ) },
+      { path: 'finance', element: (
+        <AdminRoute>
+          <Finance />
         </AdminRoute>
       ) },
     ],

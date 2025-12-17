@@ -3,19 +3,19 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { db } from './firebase'
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore'
+import facebookReviews from './assets/IMG_4657.PNG'
 
 /**
- * OfferPage – high-converting, two‑step lead → schedule flow
- * Improvements vs original:
- * - Step 1 creates a "lead" immediately (so you own the email even if they bounce)
- * - Step 2 upgrades the lead to a scheduled request (status change + details)
- * - Better validation + accessibility (aria-invalid, inputMode, autoFocus, keyboard hints)
- * - Loading/disabled states to prevent double submits
- * - Honeypot field to reduce bot spam
- * - URL attribution capture (utm_*, fbclid, referrer)
- * - Time-slot generator with correct AM/PM, local TZ and closed hours control
- * - Zip allowlist check with graceful fallback (collect lead even if out of area)
- * - Centralized env config + fetch with timeout
+ * OfferPage – high-converting, purpose-built landing page
+ * Optimized for cold traffic → trust → action
+ * - Single-purpose: Get first free pickup scheduled
+ * - Social proof prominent above the fold
+ * - 10-second explainer with visual steps
+ * - Two-step flow: capture lead → schedule details
+ * - Mobile-first responsive design
+ * - Auto-applied coupon messaging
+ * - Attribution tracking (utm_*, fbclid, referrer)
+ * - Honeypot spam protection
  */
 
 const SERVICE_ZIPS = [
@@ -263,15 +263,19 @@ Status: ${isServiceZip(formData.zipCode) ? 'In Service Area' : 'Waitlist'}
         </div>
       )}
 
-      <section className="hero-section">
+      <section className="offer-page">
         {step === 1 && (
           <div className="step step-1">
+            {/* Hero - Above the Fold */}
             <header className="hero-copy">
-              <h1>Never wait in a returns line again</h1>
-              <p>Get your first pickup <strong className="accent">completely FREE</strong>. We pick up your returns right from your doorstep.</p>
+              <div className="offer-badge">🎁 Enter your email to claim your free pickup</div>
+              <h1>Never Stand in Return Lines Again</h1>
+              <p className="hero-subtitle">Boxes, labels, and return lines… handled for you. <strong className="accent">Get your first return picked up free.</strong></p>
             </header>
 
+            {/* Lead Capture Form */}
             <form onSubmit={onStep1} className="card">
+              <h2 className="form-title">Secure Your Free Pickup</h2>
               <div className="field">
                 <label>Email <span className="req">*</span></label>
                 <input
@@ -294,14 +298,14 @@ Status: ${isServiceZip(formData.zipCode) ? 'In Service Area' : 'Waitlist'}
                   name="zipCode"
                   value={formData.zipCode}
                   onChange={onChange}
-                  placeholder="12345"
+                  placeholder="84663"
                   inputMode="numeric"
                   maxLength={5}
                   aria-invalid={!!errors.zipCode}
                 />
                 {errors.zipCode && <small className="error">{errors.zipCode}</small>}
                 {!!formData.zipCode && !errors.zipCode && !isServiceZip(formData.zipCode) && (
-                  <small className="note">Outside our current area — we'll notify you as we expand.</small>
+                  <small className="note">We're expanding! Join the waitlist and we'll notify you when we reach your area.</small>
                 )}
               </div>
 
@@ -309,19 +313,85 @@ Status: ${isServiceZip(formData.zipCode) ? 'In Service Area' : 'Waitlist'}
               <input type="text" name="honey" value={formData.honey} onChange={onChange} className="hp" tabIndex="-1" autoComplete="off" />
 
               <button type="submit" className="cta-button" disabled={submitting}>
-                {submitting ? 'Saving…' : 'Claim My Free Pickup →'}
+                {submitting ? 'Saving…' : 'Get My Free Pickup →'}
               </button>
-              <p className="muted">No credit card required • Takes 30 seconds</p>
+              <p className="muted">✓ No credit card required  •  ✓ Takes 20 seconds</p>
             </form>
 
+            {/* How It Works - 10 Second Explainer */}
+            <div className="how-it-works">
+              <h2>How Haulzy Works</h2>
+              <div className="steps">
+                <div className="step-item">
+                  <div className="step-number">1</div>
+                  <div className="step-icon">📅</div>
+                  <h3>Schedule Your Pickup</h3>
+                  <p>Pick a day and time that works for you</p>
+                </div>
+                <div className="step-item">
+                  <div className="step-number">2</div>
+                  <div className="step-icon">📦</div>
+                  <h3>Hand Us the Item</h3>
+                  <p>Or leave it on your porch — no labels, no printer, no box needed</p>
+                </div>
+                <div className="step-item">
+                  <div className="step-number">3</div>
+                  <div className="step-icon">✨</div>
+                  <h3>We Return It For You</h3>
+                  <p>Track your return and get your refund — all handled</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Benefits */}
             <div className="benefits">
-              <div className="benefit"><div className="emoji">🏠</div><h3>Doorstep Pickup</h3><p>No post office trips. We come to you.</p></div>
-              <div className="benefit"><div className="emoji">⚡</div><h3>Fast & Easy</h3><p>Schedule in seconds. We handle the rest.</p></div>
-              <div className="benefit"><div className="emoji">💰</div><h3>First One's Free</h3><p>Try it risk‑free. Your first pickup is on us.</p></div>
+              <div className="benefit"><div className="emoji">🏠</div><h3>Doorstep Pickup</h3><p>No post office trips. No waiting in line. We come to you.</p></div>
+              <div className="benefit"><div className="emoji">⚡</div><h3>Fast & Easy</h3><p>Schedule in 20 seconds. We handle everything else.</p></div>
+              <div className="benefit"><div className="emoji">💰</div><h3>First One's Free</h3><p>Try it risk-free. Your first pickup is completely on us.</p></div>
+            </div>
+
+            {/* Real Customer Reviews from Facebook */}
+            <div className="testimonials">
+              <h2>Real Reviews from Real Customers</h2>
+              <p className="testimonials-subtitle">See what families are saying on Facebook</p>
+              
+              <div className="facebook-reviews-container">
+                <img 
+                  src={facebookReviews} 
+                  alt="5-star Facebook reviews from Haulzy customers" 
+                  className="facebook-reviews-image"
+                />
+              </div>
+
+              {/* Highlighted Reviews */}
+              <div className="testimonial-grid">
+                <div className="testimonial">
+                  <div className="stars">⭐⭐⭐⭐⭐</div>
+                  <p>"Really happy I didn't have to take the time to load my kids up and take them to UPS to get my returns done. The team at Haulzy came in clutch!"</p>
+                  <p className="author">— JohnHFr007</p>
+                </div>
+                <div className="testimonial">
+                  <div className="stars">⭐⭐⭐⭐⭐</div>
+                  <p>"I NEVER return things because finding the time to get around to it is hard! Now I just put it on my porch and it gets returned?! This is the best!"</p>
+                  <p className="author">— Rt2020!</p>
+                </div>
+                <div className="testimonial">
+                  <div className="stars">⭐⭐⭐⭐⭐</div>
+                  <p>"Great idea. Great app. It's simply designed, and saves so much time. No packing up the kids in and out of the car to wait in line forever. Very smooth!"</p>
+                  <p className="author">— Browe67</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="center cta-repeat">
+              <button className="cta-button-large" onClick={() => emailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
+                Claim My Free Pickup Now →
+              </button>
+              <p className="muted">Join hundreds of families who never wait in line</p>
             </div>
 
             <div className="center">
-              <button className="cta-secondary" onClick={() => navigate('/')}>Learn More About Haulzy</button>
+              <button className="link-button" onClick={() => navigate('/')}>Learn More About Haulzy</button>
             </div>
           </div>
         )}
@@ -405,72 +475,144 @@ Status: ${isServiceZip(formData.zipCode) ? 'In Service Area' : 'Waitlist'}
         )}
       </section>
 
-       {/* quick styles scoped for this component */}
+       {/* Enhanced styles for high-converting landing page */}
        <style>{`
-         .hero-section{max-width:1200px;margin:2rem auto;padding:2rem;position:relative}
-         .accent{color:var(--primary-color)}
-         .card{background:var(--card-background,#fff);padding:2.5rem;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,.2);max-width:560px;margin:0 auto;width:100%;color:var(--text-color,#333)}
-         .hero-copy{max-width:800px;margin:0 auto 2rem;text-align:center;padding:0 1rem;color:inherit}
-         .hero-copy h1{font-size:clamp(2rem,7vw,3.5rem);line-height:1.1;margin:0 0 1rem;color:inherit}
-         .hero-copy p{font-size:clamp(1rem,3vw,1.25rem);line-height:1.5;color:inherit;opacity:.95}
-         .hero-copy.small h1{font-size:clamp(1.75rem,5vw,2.4rem)}
-         .step{display:flex;flex-direction:column;gap:2rem}
-         .benefits{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.5rem;margin-top:1rem}
-         .benefit{text-align:center;color:inherit}
-         .benefit h3{font-size:clamp(1.1rem,2.5vw,1.3rem);margin:.5rem 0;color:inherit}
-         .benefit p{font-size:clamp(.9rem,2vw,1rem);opacity:.9;line-height:1.5;color:inherit}
-         .benefit .emoji{font-size:clamp(2.5rem,6vw,3rem);margin-bottom:.5rem}
-         .center{text-align:center;margin-top:1.5rem}
+         .offer-page{max-width:1200px;margin:0 auto;padding:2rem 1rem;background:var(--background-light,#FFFCF5);min-height:100vh}
+         .accent{color:var(--primary-color,#00BFB3);font-weight:600}
+         
+         /* Hero Section */
+         .hero-copy{max-width:900px;margin:0 auto 2rem;text-align:center;padding:0 1rem}
+         .offer-badge{display:inline-block;background:linear-gradient(135deg,#00BFB3,#00a396);color:#fff;padding:.75rem 1.5rem;border-radius:50px;font-size:.95rem;font-weight:600;margin-bottom:1.5rem;box-shadow:0 4px 12px rgba(0,191,179,.3);animation:badgePulse 2s ease-in-out infinite}
+         .hero-copy h1{font-family:var(--font-heading,'Poppins',sans-serif);font-size:clamp(2.25rem,7vw,4rem);line-height:1.1;margin:0 0 1.5rem;color:var(--text-dark,#002D47);font-weight:700;letter-spacing:-.02em}
+         .hero-subtitle{font-size:clamp(1.125rem,3vw,1.5rem);line-height:1.6;color:var(--text-dark,#002D47);opacity:.9;max-width:700px;margin:0 auto}
+         
+         /* Social Proof */
+         .social-proof{max-width:600px;margin:2rem auto;padding:1.5rem;background:#fff;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,.08)}
+         .trust-badges{display:flex;flex-direction:column;align-items:center;gap:1rem}
+         .trust-item{text-align:center}
+         .stars{font-size:1.5rem;margin-bottom:.5rem;letter-spacing:2px}
+         .trust-text{font-size:1rem;color:var(--text-dark,#002D47);opacity:.8;margin:0}
+         
+         /* Form Card */
+         .card{background:#fff;padding:2.5rem;border-radius:20px;box-shadow:0 8px 32px rgba(0,47,71,.15);max-width:560px;margin:2rem auto;border:2px solid var(--primary-color,#00BFB3)}
+         .form-title{font-family:var(--font-heading,'Poppins',sans-serif);font-size:1.75rem;text-align:center;margin:0 0 1.5rem;color:var(--text-dark,#002D47)}
          .field{display:flex;flex-direction:column;margin-bottom:1.25rem}
-         label{font-weight:600;margin-bottom:.5rem;color:inherit;font-size:.95rem}
-         input,select{border:2px solid var(--border-color,#e0e0e0);border-radius:10px;padding:1rem;font-size:1rem;background:var(--input-background,#fff);color:inherit;width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;transition:border-color .2s}
-         input:focus,select:focus{outline:none;border-color:var(--primary-color)}
+         label{font-weight:600;margin-bottom:.5rem;color:var(--text-dark,#002D47);font-size:.95rem}
+         input,select{border:2px solid #e0e0e0;border-radius:10px;padding:1rem;font-size:1rem;background:#fff;color:var(--text-dark,#002D47);width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;transition:all .2s;font-family:var(--font-body,'Inter',sans-serif)}
+         input:focus,select:focus{outline:none;border-color:var(--primary-color,#00BFB3);box-shadow:0 0 0 3px rgba(0,191,179,.1)}
          input[aria-invalid="true"],select[aria-invalid="true"]{border-color:#c33}
-         input::placeholder,select::placeholder{color:var(--placeholder-color,#999);opacity:1}
+         input::placeholder{color:#999;opacity:1}
          select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center;padding-right:2.5rem}
-         .error{color:#c33;font-size:.85rem;margin-top:.4rem;display:block}
-         .note{color:inherit;font-size:.85rem;margin-top:.4rem;display:block;opacity:.7}
+         .error{color:#c33;font-size:.85rem;margin-top:.4rem;display:block;font-weight:500}
+         .note{color:var(--primary-color,#00BFB3);font-size:.85rem;margin-top:.4rem;display:block;font-weight:500}
          .req{color:#c33}
-         .muted{color:inherit;opacity:.7;font-size:.85rem;text-align:center;margin-top:.75rem;margin-bottom:0}
+         .muted{color:var(--text-dark,#002D47);opacity:.6;font-size:.85rem;text-align:center;margin-top:.75rem;margin-bottom:0}
          .muted.i{font-style:italic}
-         .cta-button{width:100%;padding:1.15rem 1.5rem;font-size:1.1rem;font-weight:700;border-radius:10px;cursor:pointer;transition:all .2s;min-height:52px}
+         
+         /* CTA Buttons */
+         .cta-button{width:100%;padding:1.25rem 2rem;font-size:1.2rem;font-weight:700;border-radius:12px;cursor:pointer;transition:all .3s;min-height:56px;background:linear-gradient(135deg,var(--primary-color,#00BFB3),#00a396);color:#fff;border:none;box-shadow:0 4px 16px rgba(0,191,179,.3);font-family:var(--font-body,'Inter',sans-serif)}
          .cta-button:disabled{opacity:.6;cursor:not-allowed}
-         .cta-button:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
-         .cta-secondary{padding:1rem 2rem;font-size:1rem;min-height:48px}
-         .link{margin:1rem auto 0;display:block;background:transparent;border:none;color:inherit;text-decoration:underline;opacity:.7;cursor:pointer;font-size:.9rem;padding:.5rem}
-         .link:hover{opacity:1}
+         .cta-button:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,191,179,.4)}
+         .cta-button-large{padding:1.5rem 3rem;font-size:1.3rem;font-weight:700;border-radius:12px;cursor:pointer;transition:all .3s;background:linear-gradient(135deg,var(--primary-color,#00BFB3),#00a396);color:#fff;border:none;box-shadow:0 6px 24px rgba(0,191,179,.3);font-family:var(--font-body,'Inter',sans-serif);display:inline-block}
+         .cta-button-large:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,191,179,.4)}
+         .cta-secondary{padding:1rem 2rem;font-size:1rem;min-height:48px;background:transparent;border:2px solid var(--primary-color,#00BFB3);color:var(--primary-color,#00BFB3);border-radius:10px;cursor:pointer;transition:all .3s;font-weight:600}
+         .cta-secondary:hover{background:var(--primary-color,#00BFB3);color:#fff}
+         .link-button{background:transparent;border:none;color:var(--text-dark,#002D47);text-decoration:underline;opacity:.7;cursor:pointer;font-size:.95rem;padding:.75rem;transition:opacity .2s}
+         .link-button:hover{opacity:1}
+         
+         /* How It Works */
+         .how-it-works{max-width:900px;margin:3rem auto;padding:2rem 1rem;text-align:center}
+         .how-it-works h2{font-family:var(--font-heading,'Poppins',sans-serif);font-size:clamp(1.75rem,5vw,2.5rem);margin-bottom:2rem;color:var(--text-dark,#002D47)}
+         .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:2rem;margin-top:2rem}
+         .step-item{position:relative;padding:2rem 1.5rem;background:#fff;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,.08);transition:transform .3s}
+         .step-item:hover{transform:translateY(-4px)}
+         .step-number{position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:32px;height:32px;background:var(--primary-color,#00BFB3);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;box-shadow:0 2px 8px rgba(0,191,179,.3)}
+         .step-icon{font-size:3rem;margin:1rem 0}
+         .step-item h3{font-family:var(--font-heading,'Poppins',sans-serif);font-size:1.25rem;margin:.75rem 0;color:var(--text-dark,#002D47)}
+         .step-item p{font-size:1rem;line-height:1.6;color:var(--text-dark,#002D47);opacity:.8;margin:0}
+         
+         /* Benefits */
+         .benefits{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:2rem;margin:3rem auto;max-width:900px;padding:0 1rem}
+         .benefit{text-align:center;padding:2rem 1.5rem;background:#fff;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,.08);transition:transform .3s}
+         .benefit:hover{transform:translateY(-4px)}
+         .benefit .emoji{font-size:3rem;margin-bottom:1rem}
+         .benefit h3{font-family:var(--font-heading,'Poppins',sans-serif);font-size:1.25rem;margin:.75rem 0;color:var(--text-dark,#002D47)}
+         .benefit p{font-size:1rem;line-height:1.6;color:var(--text-dark,#002D47);opacity:.8;margin:0}
+         
+         /* Testimonials */
+         .testimonials{max-width:1000px;margin:4rem auto;padding:2rem 1rem;text-align:center}
+         .testimonials h2{font-family:var(--font-heading,'Poppins',sans-serif);font-size:clamp(1.75rem,5vw,2.5rem);margin-bottom:1rem;color:var(--text-dark,#002D47)}
+         .testimonials-subtitle{font-size:1.125rem;color:var(--text-dark,#002D47);opacity:.7;margin-bottom:2.5rem}
+         .facebook-reviews-container{max-width:700px;margin:0 auto 3rem;padding:1rem;background:#fff;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.12);overflow:hidden}
+         .facebook-reviews-image{width:100%;height:auto;display:block;border-radius:12px}
+         .testimonial-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:2rem;margin-top:2rem}
+         .testimonial{background:#fff;padding:2rem;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,.08);text-align:left;transition:transform .3s}
+         .testimonial:hover{transform:translateY(-4px)}
+         .testimonial .stars{font-size:1.25rem;margin-bottom:1rem;letter-spacing:2px}
+         .testimonial p{font-size:1rem;line-height:1.7;color:var(--text-dark,#002D47);margin:0 0 1rem}
+         .testimonial .author{font-size:.9rem;font-weight:600;color:var(--primary-color,#00BFB3);font-style:italic}
+         
+         /* Utility */
+         .center{text-align:center;margin-top:2rem}
+         .cta-repeat{margin:4rem auto;padding:2rem 1rem}
+         .step{display:flex;flex-direction:column;gap:0}
          .hp{position:absolute;left:-9999px;opacity:0;height:0;width:0}
          .emoji.big{font-size:clamp(2.5rem,8vw,3.5rem);margin-bottom:.5rem}
-         /* modal */
+         .link{margin:1rem auto 0;display:block;background:transparent;border:none;color:var(--text-dark,#002D47);text-decoration:underline;opacity:.7;cursor:pointer;font-size:.9rem;padding:.5rem}
+         .link:hover{opacity:1}
+         
+         /* Modal */
          .modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;padding:1rem}
-         .modal{background:var(--card-background,#fff);border-radius:16px;padding:2rem;max-width:520px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:modalIn .25s ease-out;color:var(--text-color,#333)}
-         .modal h2{font-size:clamp(1.5rem,4vw,1.8rem);margin-bottom:1rem;color:inherit}
-         .modal p{font-size:clamp(.95rem,2.5vw,1.1rem);line-height:1.6;color:inherit}
-         .modal-icon{width:clamp(64px,15vw,80px);height:clamp(64px,15vw,80px);border-radius:50%;background:var(--primary-color);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:clamp(1.75rem,5vw,2.5rem);color:#fff}
+         .modal{background:#fff;border-radius:20px;padding:2.5rem;max-width:520px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:modalIn .25s ease-out;color:var(--text-dark,#002D47)}
+         .modal h2{font-family:var(--font-heading,'Poppins',sans-serif);font-size:clamp(1.5rem,4vw,2rem);margin-bottom:1rem}
+         .modal p{font-size:clamp(1rem,2.5vw,1.125rem);line-height:1.6}
+         .modal-icon{width:clamp(64px,15vw,80px);height:clamp(64px,15vw,80px);border-radius:50%;background:var(--primary-color,#00BFB3);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:clamp(1.75rem,5vw,2.5rem);color:#fff;box-shadow:0 4px 16px rgba(0,191,179,.3)}
          .modal-actions{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;margin-top:1.5rem}
          .modal-actions button{flex:1;min-width:140px}
+         
+         /* Animations */
          @keyframes modalIn{from{opacity:0;transform:translateY(-12px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+         @keyframes badgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+         
+         /* Step 2 styles */
+         .hero-copy.small h1{font-size:clamp(1.75rem,5vw,2.4rem)}
          
          /* Mobile optimizations */
          @media (max-width:768px){
-           .hero-section{padding:1.5rem 1rem;margin:1rem auto}
-           .card{padding:1.75rem 1.5rem;border-radius:16px}
-           .hero-copy{margin-bottom:1.5rem;padding:0 .5rem}
-           .benefits{grid-template-columns:1fr;gap:1.75rem;padding:0 1rem}
-           .step{gap:1.5rem}
+           .offer-page{padding:1rem .75rem}
+           .hero-copy{padding:0 .5rem;margin-bottom:1.5rem}
+           .offer-badge{font-size:.85rem;padding:.6rem 1.25rem}
+           .card{padding:2rem 1.5rem;border-radius:16px;margin:1.5rem auto}
+           .form-title{font-size:1.5rem}
+           .social-proof{margin:1.5rem auto;padding:1.25rem}
+           .how-it-works{margin:2rem auto;padding:1.5rem 1rem}
+           .steps{grid-template-columns:1fr;gap:1.5rem}
+           .benefits{grid-template-columns:1fr;gap:1.5rem;margin:2rem auto}
+           .testimonials{margin:2.5rem auto;padding:1.5rem 1rem}
+           .facebook-reviews-container{max-width:100%;padding:.75rem;border-radius:16px}
+           .facebook-reviews-image{border-radius:8px}
+           .testimonial-grid{grid-template-columns:1fr;gap:1.5rem}
+           .cta-repeat{margin:2.5rem auto;padding:1.5rem 1rem}
+           .cta-button-large{padding:1.25rem 2rem;font-size:1.1rem;width:100%}
          }
          
          @media (max-width:480px){
-           .hero-section{padding:1rem .75rem;margin:.75rem auto}
-           .card{padding:1.5rem 1.25rem;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+           .offer-page{padding:.75rem .5rem}
+           .card{padding:1.5rem 1.25rem;border-radius:12px}
            .hero-copy{padding:0}
+           .offer-badge{font-size:.8rem;padding:.5rem 1rem;margin-bottom:1rem}
            .field{margin-bottom:1rem}
            input,select{padding:.9rem;font-size:.95rem;border-radius:8px}
            .cta-button{padding:1rem 1.25rem;font-size:1rem;border-radius:8px}
+           .cta-button-large{padding:1rem 1.5rem;font-size:1rem}
            .modal{padding:1.75rem 1.25rem;border-radius:12px}
            .modal-actions{flex-direction:column;gap:.75rem}
            .modal-actions button{width:100%;min-width:unset}
-           .benefits{padding:0 .5rem;gap:1.5rem}
+           .step-item{padding:1.5rem 1rem}
+           .benefit{padding:1.5rem 1rem}
+           .facebook-reviews-container{padding:.5rem;border-radius:12px}
+           .testimonials-subtitle{font-size:1rem}
+           .testimonial{padding:1.5rem}
            label{font-size:.9rem}
            .muted{font-size:.8rem}
          }
@@ -478,6 +620,7 @@ Status: ${isServiceZip(formData.zipCode) ? 'In Service Area' : 'Waitlist'}
          @media (max-width:360px){
            .card{padding:1.25rem 1rem}
            .hero-copy h1{font-size:1.75rem}
+           .offer-badge{font-size:.75rem;padding:.4rem .85rem}
          }
        `}</style>
     </>

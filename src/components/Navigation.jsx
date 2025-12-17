@@ -114,6 +114,9 @@ function Navigation() {
               <Link to="/users" className="nav-link admin-link" onClick={closeMobileMenu}>
                 Users
               </Link>
+              <Link to="/finance" className="nav-link admin-link" onClick={closeMobileMenu}>
+                Finance
+              </Link>
               <button className="nav-link logout-btn" onClick={handleLogout}>
                 Logout
               </button>

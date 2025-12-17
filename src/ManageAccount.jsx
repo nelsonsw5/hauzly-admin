@@ -1,13 +1,256 @@
 import { useState, useEffect } from 'react';
 import { auth, db } from './firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { updatePassword, signOut } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 import './App.css';
 
 function ManageAccount() {
+  const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [billingLoading, setBillingLoading] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    streetAddress: '',
+    city: '',
+    state: '',
+    zip: ''
+  });
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordResetLoading, setPasswordResetLoading] = useState(false);
+  const [passwordResetError, setPasswordResetError] = useState(null);
+  const [passwordResetSuccess, setPasswordResetSuccess] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
+
+  const handleOpenEditModal = () => {
+    setEditFormData({
+      firstName: userData?.firstName || '',
+      lastName: userData?.lastName || '',
+      phone: userData?.phone || '',
+      streetAddress: userData?.address?.line1 || '',
+      city: userData?.address?.city || '',
+      state: userData?.address?.state || '',
+      zip: userData?.address?.postal_code || ''
+    });
+    setSaveError(null);
+    setSaveSuccess(false);
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setSaveError(null);
+    setSaveSuccess(false);
+  };
+
+  const handleEditFormChange = (field, value) => {
+    setEditFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      setSaveLoading(true);
+      setSaveError(null);
+      setSaveSuccess(false);
+
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('No user logged in');
+      }
+
+      // Update Firestore
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        firstName: editFormData.firstName,
+        lastName: editFormData.lastName,
+        phone: editFormData.phone,
+        phoneNumber: editFormData.phone, // Some places use phoneNumber
+        streetAdress: editFormData.streetAddress, // Note: typo in original field name
+        city: editFormData.city,
+        state: editFormData.state,
+        zip: editFormData.zip,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update local state
+      setUserData(prev => ({
+        ...prev,
+        firstName: editFormData.firstName,
+        lastName: editFormData.lastName,
+        phone: editFormData.phone,
+        phoneNumber: editFormData.phone,
+        streetAdress: editFormData.streetAddress,
+        city: editFormData.city,
+        state: editFormData.state,
+        zip: editFormData.zip,
+        address: {
+          ...prev.address,
+          line1: editFormData.streetAddress,
+          city: editFormData.city,
+          state: editFormData.state,
+          postal_code: editFormData.zip
+        }
+      }));
+
+      setSaveSuccess(true);
+      setTimeout(() => {
+        handleCloseEditModal();
+      }, 1500);
+
+    } catch (err) {
+      console.error('Error saving profile:', err);
+      setSaveError('Failed to save profile. Please try again.');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleOpenPasswordModal = () => {
+    setPasswordResetError(null);
+    setPasswordResetSuccess(false);
+    setShowPasswordForm(false);
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowPasswordModal(true);
+  };
+
+  const handleClosePasswordModal = () => {
+    setShowPasswordModal(false);
+    setShowPasswordForm(false);
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordResetError(null);
+    setPasswordResetSuccess(false);
+  };
+
+  const handleConfirmPasswordChange = () => {
+    setShowPasswordForm(true);
+    setPasswordResetError(null);
+  };
+
+  const handleUpdatePassword = async () => {
+    try {
+      setPasswordResetLoading(true);
+      setPasswordResetError(null);
+      setPasswordResetSuccess(false);
+
+      // Validation
+      if (!newPassword || !confirmPassword) {
+        throw new Error('Please fill in both password fields');
+      }
+
+      if (newPassword.length < 6) {
+        throw new Error('Password must be at least 6 characters long');
+      }
+
+      if (newPassword !== confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
+
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('No user logged in');
+      }
+
+      // Update password in Firebase Auth
+      await updatePassword(user, newPassword);
+      
+      setPasswordResetSuccess(true);
+      setTimeout(() => {
+        handleClosePasswordModal();
+      }, 2000);
+
+    } catch (err) {
+      console.error('Error updating password:', err);
+      if (err.code === 'auth/requires-recent-login') {
+        setPasswordResetError('For security reasons, please log out and log back in before changing your password.');
+      } else {
+        setPasswordResetError(err.message || 'Failed to update password. Please try again.');
+      }
+    } finally {
+      setPasswordResetLoading(false);
+    }
+  };
+
+  const handleOpenDeleteModal = () => {
+    setDeleteError(null);
+    setShowDeleteModal(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeleteError(null);
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      setDeleteLoading(true);
+      setDeleteError(null);
+
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('No user logged in');
+      }
+
+      // Get auth token
+      const token = await user.getIdToken();
+
+      // Call delete_account cloud function
+      const apiUrl = `${import.meta.env.VITE_FIREBASE_URL}/delete_account`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+          reason: 'User requested account deletion via web app'
+        }),
+        mode: 'cors'
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Delete account error:', errorText);
+        throw new Error(`Failed to delete account: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Sign out the user
+        await signOut(auth);
+        
+        // Redirect to home page
+        navigate('/');
+      } else {
+        throw new Error(result.error || 'Failed to delete account');
+      }
+
+    } catch (err) {
+      console.error('Error deleting account:', err);
+      setDeleteError(err.message || 'Failed to delete account. Please try again.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   const handleManageBilling = async () => {
     console.group('💳 Billing Portal Access');
@@ -490,8 +733,9 @@ function ManageAccount() {
           </div>
         </div>
 
-        <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
+        <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           <button
+            onClick={handleOpenEditModal}
             style={{
               background: 'var(--primary-color)',
               color: 'white',
@@ -505,6 +749,7 @@ function ManageAccount() {
             Edit Profile
           </button>
           <button
+            onClick={handleOpenPasswordModal}
             style={{
               background: 'transparent',
               color: 'var(--text-dark)',
@@ -517,8 +762,710 @@ function ManageAccount() {
           >
             Change Password
           </button>
+          <button
+            onClick={handleOpenDeleteModal}
+            style={{
+              background: 'transparent',
+              color: '#dc2626',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              border: '2px solid #dc2626',
+              marginLeft: 'auto'
+            }}
+          >
+            Delete Account
+          </button>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      {showEditModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+          }}
+          onClick={handleCloseEditModal}
+        >
+          <div
+            style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '2rem',
+              maxWidth: '600px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              style={{
+                fontSize: '1.75rem',
+                fontWeight: '600',
+                marginBottom: '1.5rem',
+                color: 'var(--text-dark)',
+                fontFamily: 'var(--font-heading)'
+              }}
+            >
+              Edit Profile
+            </h2>
+
+            {saveError && (
+              <div
+                style={{
+                  background: '#fee',
+                  color: '#c33',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  marginBottom: '1rem',
+                  fontSize: '0.9rem'
+                }}
+              >
+                {saveError}
+              </div>
+            )}
+
+            {saveSuccess && (
+              <div
+                style={{
+                  background: '#efe',
+                  color: '#3c3',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  marginBottom: '1rem',
+                  fontSize: '0.9rem'
+                }}
+              >
+                Profile updated successfully!
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gap: '1.25rem' }}>
+              {/* First Name & Last Name */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontWeight: '500',
+                      marginBottom: '0.5rem',
+                      color: 'var(--text-dark)'
+                    }}
+                  >
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.firstName}
+                    onChange={(e) => handleEditFormChange('firstName', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontWeight: '500',
+                      marginBottom: '0.5rem',
+                      color: 'var(--text-dark)'
+                    }}
+                  >
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.lastName}
+                    onChange={(e) => handleEditFormChange('lastName', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontWeight: '500',
+                    marginBottom: '0.5rem',
+                    color: 'var(--text-dark)'
+                  }}
+                >
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  value={editFormData.phone}
+                  onChange={(e) => handleEditFormChange('phone', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    fontSize: '1rem',
+                    fontFamily: 'inherit'
+                  }}
+                />
+              </div>
+
+              {/* Street Address */}
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontWeight: '500',
+                    marginBottom: '0.5rem',
+                    color: 'var(--text-dark)'
+                  }}
+                >
+                  Street Address
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.streetAddress}
+                  onChange={(e) => handleEditFormChange('streetAddress', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    fontSize: '1rem',
+                    fontFamily: 'inherit'
+                  }}
+                />
+              </div>
+
+              {/* City, State, ZIP */}
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontWeight: '500',
+                      marginBottom: '0.5rem',
+                      color: 'var(--text-dark)'
+                    }}
+                  >
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.city}
+                    onChange={(e) => handleEditFormChange('city', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontWeight: '500',
+                      marginBottom: '0.5rem',
+                      color: 'var(--text-dark)'
+                    }}
+                  >
+                    State
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.state}
+                    onChange={(e) => handleEditFormChange('state', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontWeight: '500',
+                      marginBottom: '0.5rem',
+                      color: 'var(--text-dark)'
+                    }}
+                  >
+                    ZIP
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.zip}
+                    onChange={(e) => handleEditFormChange('zip', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={handleCloseEditModal}
+                disabled={saveLoading}
+                style={{
+                  background: 'transparent',
+                  color: 'var(--text-dark)',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  cursor: saveLoading ? 'not-allowed' : 'pointer',
+                  border: '2px solid var(--border-color)',
+                  opacity: saveLoading ? 0.5 : 1
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveProfile}
+                disabled={saveLoading}
+                style={{
+                  background: 'var(--primary-color)',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  cursor: saveLoading ? 'not-allowed' : 'pointer',
+                  border: 'none',
+                  opacity: saveLoading ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                {saveLoading ? 'Saving...' : 'Save Changes'}
+                {saveLoading && (
+                  <div
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid white',
+                      borderTopColor: 'transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}
+                  />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Modal */}
+      {showPasswordModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+          }}
+          onClick={handleClosePasswordModal}
+        >
+          <div
+            style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '2rem',
+              maxWidth: '500px',
+              width: '100%',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              style={{
+                fontSize: '1.75rem',
+                fontWeight: '600',
+                marginBottom: '1rem',
+                color: 'var(--text-dark)',
+                fontFamily: 'var(--font-heading)'
+              }}
+            >
+              {showPasswordForm ? 'Enter New Password' : 'Change Password?'}
+            </h2>
+
+            {!showPasswordForm ? (
+              <>
+                <p
+                  style={{
+                    color: 'var(--text-dark)',
+                    marginBottom: '1.5rem',
+                    lineHeight: '1.6',
+                    fontSize: '1rem'
+                  }}
+                >
+                  Are you sure you want to change your password?
+                </p>
+
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={handleClosePasswordModal}
+                    style={{
+                      background: 'transparent',
+                      color: 'var(--text-dark)',
+                      padding: '0.75rem 1.5rem',
+                      borderRadius: '8px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      border: '2px solid var(--border-color)'
+                    }}
+                  >
+                    No, Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmPasswordChange}
+                    style={{
+                      background: 'var(--primary-color)',
+                      color: 'white',
+                      padding: '0.75rem 1.5rem',
+                      borderRadius: '8px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      border: 'none'
+                    }}
+                  >
+                    Yes, Change Password
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {passwordResetError && (
+                  <div
+                    style={{
+                      background: '#fee',
+                      color: '#c33',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      marginBottom: '1rem',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    {passwordResetError}
+                  </div>
+                )}
+
+                {passwordResetSuccess && (
+                  <div
+                    style={{
+                      background: '#efe',
+                      color: '#3c3',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      marginBottom: '1rem',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    Password updated successfully!
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontWeight: '500',
+                        marginBottom: '0.5rem',
+                        color: 'var(--text-dark)'
+                      }}
+                    >
+                      New Password
+                    </label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password"
+                      disabled={passwordResetLoading || passwordResetSuccess}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        fontSize: '1rem',
+                        fontFamily: 'inherit'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontWeight: '500',
+                        marginBottom: '0.5rem',
+                        color: 'var(--text-dark)'
+                      }}
+                    >
+                      Confirm New Password
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm new password"
+                      disabled={passwordResetLoading || passwordResetSuccess}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        fontSize: '1rem',
+                        fontFamily: 'inherit'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={handleClosePasswordModal}
+                    disabled={passwordResetLoading}
+                    style={{
+                      background: 'transparent',
+                      color: 'var(--text-dark)',
+                      padding: '0.75rem 1.5rem',
+                      borderRadius: '8px',
+                      fontWeight: '600',
+                      cursor: passwordResetLoading ? 'not-allowed' : 'pointer',
+                      border: '2px solid var(--border-color)',
+                      opacity: passwordResetLoading ? 0.5 : 1
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUpdatePassword}
+                    disabled={passwordResetLoading || passwordResetSuccess}
+                    style={{
+                      background: 'var(--primary-color)',
+                      color: 'white',
+                      padding: '0.75rem 1.5rem',
+                      borderRadius: '8px',
+                      fontWeight: '600',
+                      cursor: (passwordResetLoading || passwordResetSuccess) ? 'not-allowed' : 'pointer',
+                      border: 'none',
+                      opacity: (passwordResetLoading || passwordResetSuccess) ? 0.7 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    {passwordResetLoading ? 'Updating...' : passwordResetSuccess ? 'Updated!' : 'Update Password'}
+                    {passwordResetLoading && (
+                      <div
+                        style={{
+                          width: '16px',
+                          height: '16px',
+                          border: '2px solid white',
+                          borderTopColor: 'transparent',
+                          borderRadius: '50%',
+                          animation: 'spin 1s linear infinite'
+                        }}
+                      />
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+          }}
+          onClick={handleCloseDeleteModal}
+        >
+          <div
+            style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '2rem',
+              maxWidth: '500px',
+              width: '100%',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              style={{
+                fontSize: '1.75rem',
+                fontWeight: '600',
+                marginBottom: '1rem',
+                color: '#dc2626',
+                fontFamily: 'var(--font-heading)'
+              }}
+            >
+              Delete Account?
+            </h2>
+
+            <p
+              style={{
+                color: 'var(--text-dark)',
+                marginBottom: '1rem',
+                lineHeight: '1.6',
+                fontSize: '1rem'
+              }}
+            >
+              Are you sure you want to delete your account? This action cannot be undone.
+            </p>
+
+            <p
+              style={{
+                color: 'var(--text-dark)',
+                marginBottom: '1.5rem',
+                lineHeight: '1.6',
+                fontSize: '0.9rem',
+                background: '#fef2f2',
+                padding: '1rem',
+                borderRadius: '8px',
+                border: '1px solid #fecaca'
+              }}
+            >
+              <strong>Warning:</strong> Deleting your account will:
+              <ul style={{ marginTop: '0.5rem', marginLeft: '1.5rem' }}>
+                <li>Permanently delete your personal information</li>
+                <li>Remove your access to all services</li>
+                <li>Anonymize your business records (pickups, routes)</li>
+                <li>Cancel any active subscriptions</li>
+              </ul>
+            </p>
+
+            {deleteError && (
+              <div
+                style={{
+                  background: '#fee',
+                  color: '#c33',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  marginBottom: '1rem',
+                  fontSize: '0.9rem'
+                }}
+              >
+                {deleteError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={handleCloseDeleteModal}
+                disabled={deleteLoading}
+                style={{
+                  background: 'transparent',
+                  color: 'var(--text-dark)',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  cursor: deleteLoading ? 'not-allowed' : 'pointer',
+                  border: '2px solid var(--border-color)',
+                  opacity: deleteLoading ? 0.5 : 1
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteLoading}
+                style={{
+                  background: '#dc2626',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  cursor: deleteLoading ? 'not-allowed' : 'pointer',
+                  border: 'none',
+                  opacity: deleteLoading ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                {deleteLoading ? 'Deleting...' : 'Yes, Delete My Account'}
+                {deleteLoading && (
+                  <div
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid white',
+                      borderTopColor: 'transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}
+                  />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
