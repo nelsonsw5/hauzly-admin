@@ -96,7 +96,7 @@ function LandingPage() {
         >
           <button
             className="cta-primary"
-            onClick={() => navigate('/offer')}
+            onClick={() => window.location.href = 'https://usehaulzy.com/free'}
           >
             Try it out
           </button>
@@ -327,17 +327,26 @@ function LandingPage() {
               <div style={{ marginBottom: '2rem' }}>
                 {oneTimePlan.features && oneTimePlan.features.length > 0 ? (
                   <div style={{ 
-                    textAlign: 'center',
-                    color: 'var(--accent-color)'
+                    textAlign: 'center'
                   }}>
                     {oneTimePlan.features.slice(0, 2).map((feature, idx) => (
-                      <div key={idx} style={{ marginBottom: '0.5rem' }}>
-                        <strong>{feature}</strong>
+                      <div key={idx} style={{ 
+                        marginBottom: '0.5rem',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        color: '#6b7280',
+                        fontSize: '1rem',
+                        lineHeight: '1.5'
+                      }}>
+                        <span style={{ color: 'var(--primary-color)', fontSize: '1.2rem', flexShrink: 0, lineHeight: '1.5' }}>✓</span>
+                        <span style={{ textAlign: 'left' }}>{feature}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
+                  <div style={{ marginBottom: '0.5rem', color: '#6b7280' }}>
                     <strong>Purchase whenever you need a pickup</strong>
                   </div>
                 )}
@@ -402,24 +411,52 @@ function LandingPage() {
               <div style={{ marginBottom: '2rem' }}>
                 {basicPlan.features && basicPlan.features.length > 0 ? (
                   <div style={{ 
-                    textAlign: 'center',
-                    color: 'var(--accent-color)'
+                    textAlign: 'center'
                   }}>
                     {basicPlan.features
-                      .filter(f => 
-                        f.toLowerCase().includes('pickup') || 
-                        f.toLowerCase().includes('haul')
-                      )
-                      .slice(0, 1)
-                      .map((feature, idx) => (
-                        <div key={idx} style={{ marginBottom: '0.5rem' }}>
-                          <strong>{feature}</strong>
-                        </div>
-                      ))
+                      .filter(f => {
+                        const isPickups = f.toLowerCase().includes('pickups')
+                        const isUps = f.toLowerCase().includes('ups')
+                        return isPickups || isUps
+                      })
+                      .sort((a, b) => {
+                        // Sort: pickups first, then online returns
+                        const aIsPickup = a.toLowerCase().includes('pickup')
+                        const bIsPickup = b.toLowerCase().includes('pickup')
+                        if (aIsPickup && !bIsPickup) return -1
+                        if (!aIsPickup && bIsPickup) return 1
+                        return 0
+                      })
+                      .slice(0, 2)
+                      .map((feature, idx) => {
+                        const isPickupsFeature = feature.toLowerCase().includes('2 pickups per month') || 
+                                                 feature.toLowerCase().includes('2 pickup')
+                        return (
+                          <div key={idx} style={{ 
+                            marginBottom: '0.5rem',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                            color: '#6b7280',
+                            fontSize: '1rem',
+                            lineHeight: '1.5'
+                          }}>
+                            {isPickupsFeature ? (
+                              <span style={{ fontWeight: 'bold' }}>{feature}</span>
+                            ) : (
+                              <>
+                                <span style={{ color: 'var(--primary-color)', fontSize: '1.2rem', flexShrink: 0, lineHeight: '1.5' }}>✓</span>
+                                <span style={{ textAlign: 'left' }}>{feature}</span>
+                              </>
+                            )}
+                          </div>
+                        )
+                      })
                     }
                   </div>
                 ) : (
-                  <div style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
+                  <div style={{ marginBottom: '0.5rem', color: '#6b7280' }}>
                     <strong>2 pickups per month</strong>
                   </div>
                 )}
@@ -474,10 +511,13 @@ function LandingPage() {
                       f.toLowerCase().includes('unlimited haul')
                     ) && (
                       <div style={{ 
-                        marginBottom: '1rem', 
-                        color: 'var(--accent-color)', 
-                        textAlign: 'center',
-                        fontSize: '1.05rem'
+                        marginBottom: '0.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        color: '#6b7280',
+                        fontSize: '1rem'
                       }}>
                         {premiumPlan.features
                           .filter(f => 
@@ -486,15 +526,14 @@ function LandingPage() {
                           )
                           .slice(0, 1)
                           .map((feature, idx) => (
-                            <strong key={idx}>{feature}</strong>
+                            <span key={idx} style={{ fontWeight: 'bold' }}>{feature}</span>
                           ))
                         }
                       </div>
                     )}
                     {/* Show all other premium features */}
                     <div style={{ 
-                      textAlign: 'left',
-                      padding: '0 0.5rem'
+                      textAlign: 'center'
                     }}>
                       {premiumPlan.features
                         .filter(f => 
@@ -503,16 +542,17 @@ function LandingPage() {
                         )
                         .map((feature, idx) => (
                           <div key={idx} style={{ 
-                            marginBottom: '0.65rem', 
-                            color: 'var(--accent-color)',
-                            fontSize: '0.95rem',
-                            lineHeight: '1.4',
+                            marginBottom: '0.5rem',
                             display: 'flex',
                             alignItems: 'flex-start',
-                            gap: '0.5rem'
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                            color: '#6b7280',
+                            fontSize: '1rem',
+                            lineHeight: '1.5'
                           }}>
-                            <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', flexShrink: 0 }}>✓</span>
-                            <span>{feature}</span>
+                            <span style={{ color: 'var(--primary-color)', fontSize: '1.2rem', flexShrink: 0, lineHeight: '1.5' }}>✓</span>
+                            <span style={{ textAlign: 'left' }}>{feature}</span>
                           </div>
                         ))
                       }
@@ -710,7 +750,7 @@ function LandingPage() {
         <button 
           className="cta-primary" 
           style={{ fontSize: '1.2rem', padding: '1rem 2rem' }}
-          onClick={() => navigate('/offer')}
+          onClick={() => window.location.href = 'https://usehaulzy.com/free'}
         >
           Book your first haul
         </button>

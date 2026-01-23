@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import LandingPage from './LandingPage.jsx'
@@ -8,6 +8,8 @@ import PrivacyPolicy from './PrivacyPolicy.jsx'
 import Terms from './Terms.jsx'
 import Login from './Login.jsx'
 import SignUp from './SignUp.jsx'
+import Free from './Free.jsx'
+import Giveaway from './Giveaway.jsx'
 import Dashboard from './Dashboard.jsx'
 import { AuthProvider, ProtectedRoute, AdminRoute } from './AuthContext.jsx'
 import Returns from './Returns.jsx'
@@ -20,7 +22,7 @@ import UpgradePlan from './UpgradePlan.jsx'
 import DeleteAccount from './DeleteAccount.jsx'
 import OfferPage from './OfferPage.jsx'
 import RouteCalendar from './RouteCalendar.jsx'
-import Finance from './Finance.jsx'
+import Metrics from './Metrics.jsx'
 
 const router = createBrowserRouter([
   // Checkout routes at top-level (no navigation/footer)
@@ -39,7 +41,9 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <LandingPage /> },
       { path: 'login', element: <Login /> },
-      { path: 'signup', element: <SignUp /> },
+      { path: 'signup', element: <Navigate to="/free" replace /> },
+      { path: 'free', element: <Free /> },
+      { path: 'giveaway', element: <Giveaway /> },
       { path: 'privacy', element: <PrivacyPolicy /> },
       { path: 'terms', element: <Terms /> },
       { path: 'download', element: <Download /> },
@@ -75,9 +79,9 @@ const router = createBrowserRouter([
           <RouteCalendar />
         </AdminRoute>
       ) },
-      { path: 'finance', element: (
+      { path: 'metrics', element: (
         <AdminRoute>
-          <Finance />
+          <Metrics />
         </AdminRoute>
       ) },
     ],

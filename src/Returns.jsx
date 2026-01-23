@@ -104,12 +104,16 @@ function matchesReturnLocation(itemDropoffLocation, returnLocation) {
   const itemZip = (itemDropoffLocation.zip || '').toLowerCase().trim()
   const returnZip = (returnLocation.zip || '').toLowerCase().trim()
   
+  const itemType = (itemDropoffLocation.type || '').toLowerCase().trim()
+  const returnType = (returnLocation.type || '').toLowerCase().trim()
+  
   // Match if all non-empty fields match
   return (
     (!returnAddress || itemAddress === returnAddress) &&
     (!returnCity || itemCity === returnCity) &&
     (!returnState || itemState === returnState) &&
-    (!returnZip || itemZip === returnZip)
+    (!returnZip || itemZip === returnZip) &&
+    (!returnType || itemType === returnType)
   )
 }
 
@@ -774,7 +778,23 @@ function Returns() {
                             <div>Customer: {item.customer ? `${item.customer.firstName || ''} ${item.customer.lastName || ''}`.trim() || item.pickupCustomerName || '—' : item.pickupCustomerName || '—'}</div>
                             <div>Address: {item.pickupAddress || '—'}</div>
                             {item.dropoffLocation && (
-                              <div>Dropoff: {formatDropoffLocation(item.dropoffLocation)} {item.dropoffLocation.type && `(${item.dropoffLocation.type})`}</div>
+                              <div>
+                                <span>Dropoff: {formatDropoffLocation(item.dropoffLocation)}</span>
+                                {item.dropoffLocation.type && (
+                                  <span style={{ 
+                                    marginLeft: '0.5rem',
+                                    backgroundColor: '#f0fdf4',
+                                    color: '#16a34a',
+                                    padding: '0.15rem 0.5rem',
+                                    borderRadius: '4px',
+                                    fontSize: '0.85rem',
+                                    fontWeight: '600',
+                                    border: '1px solid #bbf7d0'
+                                  }}>
+                                    {item.dropoffLocation.type}
+                                  </span>
+                                )}
+                              </div>
                             )}
                             {item.itemSize && <div>Size: {item.itemSize} cubic ft</div>}
                             {scheduled && <div>Scheduled: {formatDateTime(scheduled)}</div>}

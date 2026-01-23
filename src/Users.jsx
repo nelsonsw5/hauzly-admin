@@ -306,7 +306,7 @@ function Users() {
                       }}>
                         {user.firstName} {user.lastName || 'No Name'}
                       </h3>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <span style={{
                           padding: '0.25rem 0.5rem',
                           borderRadius: '4px',
@@ -339,6 +339,29 @@ function Users() {
                         }}>
                           {user.approved ? 'Approved' : 'Pending'}
                         </span>
+                        {user.billing?.subscription_status === 'active' && user.billing?.subscription_type ? (
+                          <span style={{
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            backgroundColor: '#8b5cf6',
+                            color: 'white'
+                          }}>
+                            {user.billing.subscription_type}
+                          </span>
+                        ) : (
+                          <span style={{
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            backgroundColor: '#64748b',
+                            color: 'white'
+                          }}>
+                            Pay per Haul
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div style={{ color: 'var(--accent-color)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
@@ -523,6 +546,40 @@ function Users() {
                 </div>
               </div>
               
+              <div>
+                <label style={{ fontWeight: '600', color: 'black', display: 'block', marginBottom: '0.25rem' }}>Billing Plan:</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {selectedUser.billing?.subscription_status === 'active' && selectedUser.billing?.subscription_type ? (
+                    <>
+                      <span style={{
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        fontWeight: '600',
+                        backgroundColor: '#8b5cf6',
+                        color: 'white'
+                      }}>
+                        {selectedUser.billing.subscription_type}
+                      </span>
+                      <span style={{ color: 'var(--accent-color)', fontSize: '0.9rem' }}>
+                        (Active Subscription)
+                      </span>
+                    </>
+                  ) : (
+                    <span style={{
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '4px',
+                      fontSize: '0.8rem',
+                      fontWeight: '600',
+                      backgroundColor: '#64748b',
+                      color: 'white'
+                    }}>
+                      Pay per Haul
+                    </span>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <label style={{ fontWeight: '600', color: 'black', display: 'block', marginBottom: '0.25rem' }}>User ID:</label>
                 <div style={{ color: 'var(--accent-color)', fontFamily: 'monospace', fontSize: '0.9rem' }}>

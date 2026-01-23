@@ -79,9 +79,9 @@ function Dashboard() {
   const [errorPickups, setErrorPickups] = useState('')
   const [errorItems, setErrorItems] = useState('')
   
-  // Filter state - defaults to today and scheduled
+  // Filter state - defaults to today and all statuses
   const [selectedDate, setSelectedDate] = useState(getTodayDateString())
-  const [statusFilter, setStatusFilter] = useState('scheduled')
+  const [statusFilter, setStatusFilter] = useState('')
   
   // Selection state for filtering
   const [selectedRoute, setSelectedRoute] = useState(null)
@@ -367,7 +367,7 @@ function Dashboard() {
           <button
             onClick={() => {
               setSelectedDate(getTodayDateString())
-              setStatusFilter('scheduled')
+              setStatusFilter('')
               setSelectedRoute(null)
               setSelectedPickup(null)
             }}
