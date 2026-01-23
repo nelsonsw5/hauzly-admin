@@ -27,3 +27,4 @@ dist-ssr
 src/assets/*.png
 src/assets/*.PNG
 .firebase/hosting.ZGlzdA.cache
+.env.prod
