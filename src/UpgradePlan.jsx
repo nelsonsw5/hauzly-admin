@@ -21,7 +21,7 @@ function UpgradePlan() {
   const [planType, setPlanType] = useState('subscription')
   const [billingCycle, setBillingCycle] = useState('yearly')
   const [selectedPlan, setSelectedPlan] = useState('basic')
-  const [promoCode, setPromoCode] = useState('')
+  const [promoCode, setPromoCode] = useState('HOLIDAYS') // Auto-apply HOLIDAYS promo code for Basic plan
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [userData, setUserData] = useState(null)
@@ -347,6 +347,7 @@ function UpgradePlan() {
                 setBillingCycle('monthly')
                 if (selectedPlan === 'family') {
                   setSelectedPlan('basic')
+                  setPromoCode('HOLIDAYS') // Auto-apply for Basic
                 }
               }}
               style={{
@@ -447,7 +448,10 @@ function UpgradePlan() {
           {/* Basic Plan */}
           {subscriptionPlans.basic && (
             <div
-              onClick={() => setSelectedPlan('basic')}
+              onClick={() => {
+                setSelectedPlan('basic')
+                setPromoCode('HOLIDAYS') // Auto-apply HOLIDAYS for Basic plan
+              }}
               className={`plan-card ${selectedPlan === 'basic' ? 'selected' : ''}`}
               style={{ 
                 textAlign: 'center',
@@ -530,7 +534,10 @@ function UpgradePlan() {
           {/* Premium Plan */}
           {showPremiumPlan && subscriptionPlans.premium && (
             <div
-              onClick={() => setSelectedPlan('premium')}
+              onClick={() => {
+                setSelectedPlan('premium')
+                setPromoCode('') // Clear promo code for Premium plan
+              }}
               className={`plan-card ${selectedPlan === 'premium' ? 'selected' : ''}`}
               style={{ 
                 textAlign: 'center',
@@ -638,7 +645,13 @@ function UpgradePlan() {
             type="text" 
             placeholder="Promo Code (optional)" 
             value={promoCode} 
-            onChange={(e) => setPromoCode(e.target.value.toUpperCase())} 
+            onChange={(e) => {
+              // Only allow changes if Premium is selected
+              if (selectedPlan === 'premium') {
+                setPromoCode(e.target.value.toUpperCase())
+              }
+            }}
+            readOnly={selectedPlan === 'basic'}
             style={{
               width: '100%',
               padding: '0.875rem 1rem',
@@ -647,12 +660,13 @@ function UpgradePlan() {
               fontSize: '1rem',
               fontFamily: 'var(--font-body)',
               color: 'var(--text-dark)',
-              backgroundColor: 'var(--text-light)',
+              backgroundColor: selectedPlan === 'basic' ? 'rgba(0, 191, 179, 0.05)' : 'var(--text-light)',
               textTransform: 'uppercase',
               letterSpacing: '0.5px',
               outline: 'none',
-              transition: 'border-color 0.2s ease',
-              boxSizing: 'border-box'
+              transition: 'border-color 0.2s ease, background-color 0.2s ease',
+              boxSizing: 'border-box',
+              cursor: selectedPlan === 'basic' ? 'not-allowed' : 'text'
             }} 
           />
           {promoCode && ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'CAMI', 'MIKAELA', 'JEZNI', 'HAULZY-INFLUENCER', 'INFLUENCER'].includes(promoCode.toUpperCase()) && (
@@ -670,6 +684,18 @@ function UpgradePlan() {
             }}>
               {promoCode.toUpperCase() === 'HAULZY-INFLUENCER' ? '1 year free' : promoCode.toUpperCase() === 'INFLUENCER' ? '3 months free' : '2 months free'}
             </span>
+          )}
+          {selectedPlan === 'basic' && (
+            <div style={{
+              fontSize: '0.8rem',
+              color: 'var(--primary-color)',
+              marginTop: '0.5rem',
+              textAlign: 'center',
+              fontFamily: 'var(--font-body)',
+              fontWeight: 600
+            }}>
+              ✨ HOLIDAYS promo code automatically applied - 2 months free!
+            </div>
           )}
         </div>
 

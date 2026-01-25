@@ -714,7 +714,7 @@ function Free() {
             lineHeight: 1.5,
             padding: window.innerWidth <= 480 ? '0 0.5rem' : '0'
           }}>
-            Just sign up and enjoy 2 free months of NOT standing in return lines
+            Just sign up for BASIC plan and enjoy 2 free months of NOT standing in return lines
           </div>
         </div>
       </div>
