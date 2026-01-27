@@ -42,9 +42,6 @@ function Free() {
   const [userPromoCode, setUserPromoCode] = useState('') // Track user-entered promo code
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [promoCodeError, setPromoCodeError] = useState('')
-  const [promoCodeValidating, setPromoCodeValidating] = useState(false)
-  const [promoCodeValidated, setPromoCodeValidated] = useState(false)
   const [costcoCardImage, setCostcoCardImage] = useState(null)
   const [costcoCardPreview, setCostcoCardPreview] = useState(null)
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -286,47 +283,10 @@ function Free() {
   }
 
 
-  // Function to validate promo code with backend
-  const validatePromoCode = async (code, priceId) => {
-    if (!code.trim()) {
-      return { valid: true } // Empty promo code is valid (optional field)
-    }
-
-    try {
-      setPromoCodeValidating(true)
-      setPromoCodeError('')
-      
-      const response = await fetch(`${FIREBASE_FUNCTIONS_BASE_URL}/validate_promo_code`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          promo_code: code.trim(),
-          price_id: priceId
-        })
-      })
-
-      const data = await response.json()
-      
-      if (!response.ok || data.status === 'error') {
-        throw new Error(data.message || 'Failed to validate promo code')
-      }
-
-      return data
-    } catch (err) {
-      console.error('Error validating promo code:', err)
-      throw err
-    } finally {
-      setPromoCodeValidating(false)
-    }
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('📝 Form submission started');
     setError('');
-    setPromoCodeError('');
 
     try {
       console.group('✅ Form Validation');
@@ -396,24 +356,14 @@ function Free() {
         throw new Error('Please enter a valid email address');
       }
 
-      // Validate promo code with backend if subscription plan
+      // Validate promo code if entered (still validate the system promo code)
       if (promoCode.trim() && planType === 'subscription') {
-        console.log('Validating promo code with backend:', promoCode.trim().toUpperCase());
-        
-        // Determine price ID for validation
-        let priceId = billingCycle === 'yearly' 
-          ? subscriptionPlans[selectedPlan].priceYearlyId 
-          : subscriptionPlans[selectedPlan].priceMonthlyId;
-        
-        const validation = await validatePromoCode(promoCode, priceId);
-        
-        if (!validation.valid) {
-          setPromoCodeError(validation.message || 'Invalid promo code');
-          throw new Error(validation.message || 'Invalid promo code');
+        console.log('Validating promo code:', promoCode.trim().toUpperCase());
+        const validPromoCodes = ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'CAMI', 'MIKAELA', 'JEZNI', 'HAULZY-INFLUENCER', 'INFLUENCER'];
+        if (!validPromoCodes.includes(promoCode.trim().toUpperCase())) {
+          throw new Error(`Invalid promo code: "${promoCode}"`);
         }
-        
-        console.log('✅ Promo code validated successfully:', validation);
-        setPromoCodeValidated(true);
+        console.log('✅ Promo code is valid');
       }
       
       // Log user-entered promo code for tracking (no validation needed)
@@ -700,6 +650,74 @@ function Free() {
       backgroundColor: '#f8f9fa',
       paddingBottom: window.innerWidth <= 768 ? '2rem' : '1.5rem'
     }}>
+      {/* Promotional Banner */}
+      <div style={{
+        background: 'linear-gradient(135deg, #00BFB3 0%, #00a89e 100%)',
+        color: 'white',
+        padding: window.innerWidth <= 480 ? '1.5rem 1rem' : window.innerWidth <= 768 ? '2rem 1.5rem' : '2.5rem 2rem',
+        borderRadius: window.innerWidth <= 480 ? '12px' : '16px',
+        marginBottom: window.innerWidth <= 480 ? '1.5rem' : '2rem',
+        boxShadow: '0 8px 24px rgba(0, 191, 179, 0.4)',
+        textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+        border: '3px solid rgba(255, 255, 255, 0.3)'
+      }}>
+        {/* Decorative elements */}
+        <div style={{
+          position: 'absolute',
+          top: '-50px',
+          right: '-50px',
+          width: '200px',
+          height: '200px',
+          background: 'rgba(255, 255, 255, 0.1)',
+          borderRadius: '50%',
+          pointerEvents: 'none'
+        }} />
+        <div style={{
+          position: 'absolute',
+          bottom: '-30px',
+          left: '-30px',
+          width: '150px',
+          height: '150px',
+          background: 'rgba(255, 255, 255, 0.1)',
+          borderRadius: '50%',
+          pointerEvents: 'none'
+        }} />
+        
+        {/* Content */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{
+            fontSize: window.innerWidth <= 480 ? '1.5rem' : window.innerWidth <= 768 ? '2.5rem' : '3rem',
+            fontWeight: 900,
+            fontFamily: 'var(--font-heading)',
+            marginBottom: window.innerWidth <= 480 ? '0.75rem' : '0.75rem',
+            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.2)',
+            letterSpacing: window.innerWidth <= 480 ? '0.5px' : '1px',
+            lineHeight: window.innerWidth <= 480 ? 1.3 : 1.2,
+            wordWrap: 'break-word',
+            overflowWrap: 'break-word'
+          }}>
+            {window.innerWidth <= 480 ? (
+              <>🎉 HAULZY IS FREE<br />FOR 2 MONTHS! 🎉</>
+            ) : (
+              '🎉 HAULZY IS FREE FOR 2 MONTHS! 🎉'
+            )}
+          </div>
+          <div style={{
+            fontSize: window.innerWidth <= 480 ? '0.95rem' : window.innerWidth <= 768 ? '1.15rem' : '1.3rem',
+            fontWeight: 600,
+            fontFamily: 'var(--font-body)',
+            opacity: 0.95,
+            maxWidth: '800px',
+            margin: '0 auto',
+            lineHeight: 1.5,
+            padding: window.innerWidth <= 480 ? '0 0.5rem' : '0'
+          }}>
+            Just sign up and enjoy 2 free months of NOT standing in return lines
+          </div>
+        </div>
+      </div>
 
       {submitting && (
         <div
@@ -1265,7 +1283,6 @@ function Free() {
                   {visiblePlans.map(([planId, plan]) => {
                       const { amount, period } = getDisplayPrice(planId)
                       const isSelected = selectedPlan === planId
-                      const isBasicPlan = planId === 'basic'
                       return (
                         <button
                           key={planId}
@@ -1321,33 +1338,13 @@ function Free() {
                               ✓
                             </div>
                           )}
-                          {isBasicPlan && (
-                            <div style={{
-                              position: 'absolute',
-                              top: window.innerWidth <= 480 ? '-10px' : '-12px',
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              backgroundColor: '#FFD700',
-                              color: '#000',
-                              fontSize: window.innerWidth <= 480 ? '0.7rem' : '0.75rem',
-                              fontWeight: 700,
-                              padding: window.innerWidth <= 480 ? '0.3rem 0.6rem' : '0.35rem 0.75rem',
-                              borderRadius: '999px',
-                              boxShadow: '0 2px 8px rgba(255, 215, 0, 0.4)',
-                              whiteSpace: 'nowrap',
-                              border: '2px solid #FFA500'
-                            }}>
-                              🎉 Free for 2 months
-                            </div>
-                          )}
                           <h3 style={{
                             margin: 0,
                             fontSize: window.innerWidth <= 480 ? '1rem' : window.innerWidth <= 768 ? '1.15rem' : '1.35rem',
                             fontWeight: 700,
                             fontFamily: 'var(--font-heading)',
                             textAlign: 'center',
-                            lineHeight: 1.2,
-                            marginTop: isBasicPlan ? (window.innerWidth <= 480 ? '0.5rem' : '0.75rem') : 0
+                            lineHeight: 1.2
                           }}>
                             {plan.name}
                           </h3>
@@ -1936,39 +1933,21 @@ function Free() {
                 type="text"
                 placeholder="Enter promo code"
                 value={userPromoCode}
-                onChange={(e) => {
-                  setUserPromoCode(e.target.value)
-                  setPromoCodeError('')
-                  setPromoCodeValidated(false)
-                }}
+                onChange={(e) => setUserPromoCode(e.target.value)}
                 style={{
                   ...inputStyle,
-                  textTransform: 'uppercase',
-                  borderColor: promoCodeError ? '#dc2626' : promoCodeValidated ? 'var(--primary-color)' : 'var(--border-color)'
+                  textTransform: 'uppercase'
                 }}
               />
-              {promoCodeError && (
-                <p style={{
-                  margin: 0,
-                  fontSize: window.innerWidth <= 480 ? '0.75rem' : window.innerWidth <= 768 ? '0.8rem' : '0.85rem',
-                  color: '#dc2626',
-                  fontFamily: 'var(--font-body)',
-                  fontWeight: 600
-                }}>
-                  ⚠️ {promoCodeError}
-                </p>
-              )}
-              {promoCodeValidated && !promoCodeError && (
-                <p style={{
-                  margin: 0,
-                  fontSize: window.innerWidth <= 480 ? '0.75rem' : window.innerWidth <= 768 ? '0.8rem' : '0.85rem',
-                  color: 'var(--primary-color)',
-                  fontFamily: 'var(--font-body)',
-                  fontWeight: 600
-                }}>
-                  ✓ Promo code applied successfully
-                </p>
-              )}
+              <p style={{
+                margin: 0,
+                fontSize: window.innerWidth <= 480 ? '0.75rem' : window.innerWidth <= 768 ? '0.8rem' : '0.85rem',
+                color: 'var(--text-dark)',
+                opacity: 0.7,
+                fontFamily: 'var(--font-body)',
+                fontStyle: 'italic'
+              }}>
+              </p>
             </div>
 
             <label style={{ 
@@ -2019,7 +1998,7 @@ function Free() {
 
           <button 
             type="submit" 
-            disabled={submitting || promoCodeValidating}
+            disabled={submitting}
             onClick={(e) => {
               console.log('🖱️ Button clicked!');
               console.log('Button type:', e.currentTarget.type);
@@ -2028,33 +2007,33 @@ function Free() {
             }}
             style={{ 
                 padding: window.innerWidth <= 480 ? '1rem' : window.innerWidth <= 768 ? '1rem 1.25rem' : '1rem 1.5rem',
-                background: (submitting || promoCodeValidating) ? 'var(--border-color)' : 'var(--primary-color)',
+                background: submitting ? 'var(--border-color)' : 'var(--primary-color)',
                 color: 'var(--text-light)',
               border: 'none',
                 borderRadius: window.innerWidth <= 480 ? '8px' : '10px',
                 fontWeight: 700,
-              cursor: (submitting || promoCodeValidating) ? 'not-allowed' : 'pointer',
-              opacity: (submitting || promoCodeValidating) ? 0.7 : 1,
+              cursor: submitting ? 'not-allowed' : 'pointer',
+              opacity: submitting ? 0.7 : 1,
                 fontFamily: 'var(--font-body)',
                 transition: 'all 0.2s ease',
-                boxShadow: (submitting || promoCodeValidating) ? 'none' : '0 2px 4px rgba(0, 191, 179, 0.2)',
+                boxShadow: submitting ? 'none' : '0 2px 4px rgba(0, 191, 179, 0.2)',
                 minHeight: window.innerWidth <= 480 ? '48px' : '52px',
                 fontSize: window.innerWidth <= 480 ? '1rem' : window.innerWidth <= 768 ? '1.1rem' : '1.05rem',
             }}
             onMouseEnter={(e) => {
-              if (!submitting && !promoCodeValidating && window.innerWidth > 768) {
+              if (!submitting && window.innerWidth > 768) {
                 e.currentTarget.style.transform = 'translateY(-2px)'
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 191, 179, 0.3)'
               }
             }}
             onMouseLeave={(e) => {
-              if (!submitting && !promoCodeValidating && window.innerWidth > 768) {
+              if (!submitting && window.innerWidth > 768) {
                 e.currentTarget.style.transform = 'translateY(0)'
                 e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 191, 179, 0.2)'
               }
             }}
           >
-            {promoCodeValidating ? 'Validating promo code...' : submitting ? 'Creating account...' : 'Sign Up'}
+            {submitting ? 'Creating account...' : 'Sign Up'}
           </button>
 
             <div style={{ 

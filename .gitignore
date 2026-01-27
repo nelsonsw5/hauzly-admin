@@ -24,7 +24,7 @@ dist-ssr
 *.sw?
 .env.prod
 .env.dev
+.env*
 src/assets/*.png
 src/assets/*.PNG
 .firebase/hosting.ZGlzdA.cache
-.env.prod

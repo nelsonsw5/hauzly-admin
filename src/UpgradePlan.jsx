@@ -26,6 +26,9 @@ function UpgradePlan() {
   const [submitting, setSubmitting] = useState(false)
   const [userData, setUserData] = useState(null)
   const [showPremiumPlan, setShowPremiumPlan] = useState(false)
+  const [promoCodeError, setPromoCodeError] = useState('')
+  const [promoCodeValidating, setPromoCodeValidating] = useState(false)
+  const [promoCodeValidated, setPromoCodeValidated] = useState(false)
 
   // Helper functions
   const getDisplayPrice = (planId) => {
@@ -146,6 +149,42 @@ function UpgradePlan() {
     )
   }
 
+  // Function to validate promo code with backend
+  const validatePromoCode = async (code, priceId) => {
+    if (!code.trim()) {
+      return { valid: true } // Empty promo code is valid (optional field)
+    }
+
+    try {
+      setPromoCodeValidating(true)
+      setPromoCodeError('')
+      
+      const response = await fetch(`${FIREBASE_FUNCTIONS_BASE_URL}/validate_promo_code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          promo_code: code.trim(),
+          price_id: priceId
+        })
+      })
+
+      const data = await response.json()
+      
+      if (!response.ok || data.status === 'error') {
+        throw new Error(data.message || 'Failed to validate promo code')
+      }
+
+      return data
+    } catch (err) {
+      console.error('Error validating promo code:', err)
+      throw err
+    } finally {
+      setPromoCodeValidating(false)
+    }
+  }
+
   const handleUpgrade = async () => {
     if (!auth.currentUser || !userData) {
       navigate('/login')
@@ -153,17 +192,11 @@ function UpgradePlan() {
     }
 
     setError('')
+    setPromoCodeError('')
     setSubmitting(true)
 
     try {
-      // Validate promo code if entered
-      if (promoCode.trim()) {
-        const validPromoCodes = ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'CAMI', 'MIKAELA', 'JEZNI', 'HAULZY-INFLUENCER', 'INFLUENCER'];
-        if (!validPromoCodes.includes(promoCode.trim().toUpperCase())) {
-          throw new Error(`Invalid promo code: "${promoCode}"`);
-        }
-      }
-
+      // Determine price ID
       let priceId = billingCycle === 'yearly' 
         ? subscriptionPlans[selectedPlan].priceYearlyId 
         : subscriptionPlans[selectedPlan].priceMonthlyId
@@ -173,6 +206,21 @@ function UpgradePlan() {
       if (selectedPlan === 'basic' && billingCycle === 'yearly' && promoCode.trim() && specialPromoCodes.includes(promoCode.trim().toUpperCase())) {
         console.log('🎟️ Special promo code detected, mapping to price_1SSAUJ7TZwWADd5cLUKUPRYM');
         priceId = 'price_1SSAUJ7TZwWADd5cLUKUPRYM';
+      }
+
+      // Validate promo code with backend if entered
+      if (promoCode.trim()) {
+        console.log('Validating promo code with backend:', promoCode.trim().toUpperCase());
+        
+        const validation = await validatePromoCode(promoCode, priceId);
+        
+        if (!validation.valid) {
+          setPromoCodeError(validation.message || 'Invalid promo code');
+          throw new Error(validation.message || 'Invalid promo code');
+        }
+        
+        console.log('✅ Promo code validated successfully:', validation);
+        setPromoCodeValidated(true);
       }
 
       if (!priceId) {
@@ -229,6 +277,9 @@ function UpgradePlan() {
       console.error('Error during upgrade:', err)
       setError(err.message || 'Failed to process upgrade. Please try again.')
       setSubmitting(false)
+      
+      // Scroll to top to show error
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
@@ -649,13 +700,15 @@ function UpgradePlan() {
               // Only allow changes if Premium is selected
               if (selectedPlan === 'premium') {
                 setPromoCode(e.target.value.toUpperCase())
+                setPromoCodeError('')
+                setPromoCodeValidated(false)
               }
             }}
             readOnly={selectedPlan === 'basic'}
             style={{
               width: '100%',
               padding: '0.875rem 1rem',
-              border: '1px solid var(--border-color)',
+              border: `1px solid ${promoCodeError ? '#dc2626' : promoCodeValidated ? 'var(--primary-color)' : 'var(--border-color)'}`,
               borderRadius: '8px',
               fontSize: '1rem',
               fontFamily: 'var(--font-body)',
@@ -669,23 +722,31 @@ function UpgradePlan() {
               cursor: selectedPlan === 'basic' ? 'not-allowed' : 'text'
             }} 
           />
-          {promoCode && ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'CAMI', 'MIKAELA', 'JEZNI', 'HAULZY-INFLUENCER', 'INFLUENCER'].includes(promoCode.toUpperCase()) && (
-            <span style={{
-              position: 'absolute',
-              right: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: 'var(--primary-color)',
-              fontWeight: '600',
-              fontSize: '0.85rem',
-              backgroundColor: 'rgba(0, 191, 179, 0.1)',
-              padding: '4px 8px',
-              borderRadius: '4px'
+          {promoCodeError && (
+            <div style={{
+              fontSize: '0.8rem',
+              color: '#dc2626',
+              marginTop: '0.5rem',
+              textAlign: 'center',
+              fontFamily: 'var(--font-body)',
+              fontWeight: 600
             }}>
-              {promoCode.toUpperCase() === 'HAULZY-INFLUENCER' ? '1 year free' : promoCode.toUpperCase() === 'INFLUENCER' ? '3 months free' : '2 months free'}
-            </span>
+              ⚠️ {promoCodeError}
+            </div>
           )}
-          {selectedPlan === 'basic' && (
+          {promoCodeValidated && !promoCodeError && promoCode && (
+            <div style={{
+              fontSize: '0.8rem',
+              color: 'var(--primary-color)',
+              marginTop: '0.5rem',
+              textAlign: 'center',
+              fontFamily: 'var(--font-body)',
+              fontWeight: 600
+            }}>
+              ✓ Promo code applied successfully
+            </div>
+          )}
+          {selectedPlan === 'basic' && !promoCodeError && (
             <div style={{
               fontSize: '0.8rem',
               color: 'var(--primary-color)',
@@ -713,7 +774,7 @@ function UpgradePlan() {
 
         <button 
           onClick={handleUpgrade}
-          disabled={submitting}
+          disabled={submitting || promoCodeValidating}
           style={{ 
             width: '100%',
             maxWidth: '400px',
@@ -725,8 +786,8 @@ function UpgradePlan() {
             border: 'none',
             borderRadius: 8,
             fontWeight: 700,
-            cursor: 'pointer',
-            opacity: submitting ? 0.7 : 1,
+            cursor: (submitting || promoCodeValidating) ? 'not-allowed' : 'pointer',
+            opacity: (submitting || promoCodeValidating) ? 0.7 : 1,
             fontFamily: 'var(--font-body)',
             transition: 'all 0.2s ease',
             boxShadow: '0 2px 4px rgba(0, 191, 179, 0.2)',
@@ -734,7 +795,7 @@ function UpgradePlan() {
             fontSize: '1.1rem',
           }}
         >
-          {submitting ? 'Processing...' : 'Upgrade Now'}
+          {promoCodeValidating ? 'Validating promo code...' : submitting ? 'Processing...' : 'Upgrade Now'}
         </button>
       </section>
     </main>

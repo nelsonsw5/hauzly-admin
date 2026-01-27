@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore'
-import { db } from './firebase'
+import { collection, getDocs, doc, getDoc, addDoc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore'
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
+import { db, storage } from './firebase'
 import './App.css'
 
 function toDateMaybe(value) {
@@ -90,6 +91,31 @@ function Dashboard() {
   // Modal state for item details
   const [selectedItem, setSelectedItem] = useState(null)
   const [showItemModal, setShowItemModal] = useState(false)
+  
+  // Create pickup state
+  const [customers, setCustomers] = useState([])
+  const [loadingCustomers, setLoadingCustomers] = useState(true)
+  const [selectedCustomer, setSelectedCustomer] = useState('')
+  const [selectedScheduledPickup, setSelectedScheduledPickup] = useState('')
+  const [customerScheduledPickups, setCustomerScheduledPickups] = useState([])
+  
+  // Add item modal state
+  const [showAddItemModal, setShowAddItemModal] = useState(false)
+  const [itemDescription, setItemDescription] = useState('')
+  const [itemPackagingStatus, setItemPackagingStatus] = useState('')
+  const [itemEstimatedWeight, setItemEstimatedWeight] = useState('')
+  const [itemEstimatedSize, setItemEstimatedSize] = useState('')
+  const [itemRequiresBox, setItemRequiresBox] = useState(false)
+  const [itemNotes, setItemNotes] = useState('')
+  const [submittingItem, setSubmittingItem] = useState(false)
+  
+  // Image upload state
+  const [itemImageFile, setItemImageFile] = useState(null)
+  const [itemImagePreview, setItemImagePreview] = useState(null)
+  const [qrCodeFile, setQrCodeFile] = useState(null)
+  const [qrCodePreview, setQrCodePreview] = useState(null)
+  const [labelImageFile, setLabelImageFile] = useState(null)
+  const [labelImagePreview, setLabelImagePreview] = useState(null)
 
   // Create items lookup map
   const itemsMap = useMemo(() => {
@@ -146,20 +172,8 @@ function Dashboard() {
       try {
         const snap = await getDocs(collection(db, 'pickups'))
         if (cancelled) return
-        const basePickups = snap.docs.map(d => ({ id: d.id, items: [], ...d.data() }))
-
-        // Fetch items subcollections for each pickup
-        const withItems = await Promise.all(basePickups.map(async p => {
-          try {
-            const itemsSnap = await getDocs(collection(db, 'pickups', p.id, 'items'))
-            const items = itemsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-            return { ...p, items }
-          } catch (error) {
-            return p
-          }
-        }))
-
-        setPickups(withItems)
+        const allPickups = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        setPickups(allPickups)
       } catch (err) {
         if (!cancelled) setErrorPickups(err?.message || 'Failed to load pickups')
       } finally {
@@ -182,11 +196,209 @@ function Dashboard() {
       }
     }
 
+    async function loadCustomers() {
+      setLoadingCustomers(true)
+      try {
+        const snap = await getDocs(collection(db, 'users'))
+        if (cancelled) return
+        const allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        // Include all users (customers, admins, and drivers)
+        setCustomers(allUsers.sort((a, b) => {
+          const nameA = [a.firstName, a.lastName].filter(Boolean).join(' ').toLowerCase()
+          const nameB = [b.firstName, b.lastName].filter(Boolean).join(' ').toLowerCase()
+          return nameA.localeCompare(nameB)
+        }))
+      } catch (err) {
+        console.error('Failed to load customers:', err)
+      } finally {
+        if (!cancelled) setLoadingCustomers(false)
+      }
+    }
+
     loadRoutes()
     loadPickups()
     loadItems()
+    loadCustomers()
     return () => { cancelled = true }
   }, [])
+
+  // Load scheduled pickups when customer is selected
+  useEffect(() => {
+    if (!selectedCustomer) {
+      setCustomerScheduledPickups([])
+      setSelectedScheduledPickup('')
+      return
+    }
+
+    async function loadCustomerScheduledPickups() {
+      try {
+        // Get all pickups for this customer with status 'scheduled' or 'Scheduled'
+        const customerPickups = pickups.filter(p => {
+          const status = (p.status || '').toString().toLowerCase()
+          return p.customerId === selectedCustomer && 
+                 (status === 'scheduled' || status === 'pending')
+        })
+        
+        // Sort by scheduled time
+        const sortedPickups = customerPickups.sort((a, b) => {
+          const timeA = toDateMaybe(a.scheduledTime || a.scheduledWindowStart || a.scheduledAt)
+          const timeB = toDateMaybe(b.scheduledTime || b.scheduledWindowStart || b.scheduledAt)
+          if (!timeA) return 1
+          if (!timeB) return -1
+          return timeA - timeB
+        })
+        
+        setCustomerScheduledPickups(sortedPickups)
+      } catch (err) {
+        console.error('Failed to load customer scheduled pickups:', err)
+      }
+    }
+
+    loadCustomerScheduledPickups()
+  }, [selectedCustomer, pickups])
+
+  // Handle image file selection
+  function handleImageSelect(file, setFile, setPreview) {
+    if (file) {
+      setFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPreview(reader.result)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // Upload image to Firebase Storage
+  async function uploadImage(file, path) {
+    if (!file) return null
+    
+    try {
+      console.log('📤 Uploading image to path:', path)
+      const storageRef = ref(storage, path)
+      
+      // Use uploadBytesResumable for better error handling
+      const uploadTask = uploadBytesResumable(storageRef, file)
+      
+      // Wait for upload to complete
+      await new Promise((resolve, reject) => {
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+            console.log(`Upload progress: ${progress.toFixed(2)}%`)
+          },
+          (error) => {
+            console.error('❌ Upload error:', error)
+            console.error('Error code:', error.code)
+            console.error('Error message:', error.message)
+            reject(error)
+          },
+          () => {
+            console.log('✅ Upload completed')
+            resolve()
+          }
+        )
+      })
+      
+      const url = await getDownloadURL(storageRef)
+      console.log('✅ Download URL obtained:', url)
+      
+      return {
+        url,
+        uploadedAt: new Date().toISOString()
+      }
+    } catch (error) {
+      console.error('❌ Error in uploadImage:', error)
+      throw error
+    }
+  }
+
+  // Handle adding item to pickup
+  async function handleAddItem() {
+    if (!selectedScheduledPickup || !itemDescription.trim()) {
+      alert('Please provide an item description')
+      return
+    }
+
+    setSubmittingItem(true)
+    try {
+      const timestamp = Date.now()
+      const itemData = {
+        description: itemDescription.trim(),
+        status: 'Scheduled',
+        quantity: 1,
+        pickupId: selectedScheduledPickup,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }
+
+      // Upload images if provided
+      if (itemImageFile) {
+        const imagePath = `items/${selectedScheduledPickup}/${timestamp}_photo.${itemImageFile.name.split('.').pop()}`
+        itemData.photo = await uploadImage(itemImageFile, imagePath)
+      }
+
+      if (qrCodeFile) {
+        const qrPath = `items/${selectedScheduledPickup}/${timestamp}_qr.${qrCodeFile.name.split('.').pop()}`
+        itemData.qrCode = await uploadImage(qrCodeFile, qrPath)
+      }
+
+      if (labelImageFile) {
+        const labelPath = `items/${selectedScheduledPickup}/${timestamp}_label.${labelImageFile.name.split('.').pop()}`
+        itemData.labelImage = await uploadImage(labelImageFile, labelPath)
+      }
+
+      // Add optional fields if provided
+      if (itemPackagingStatus) itemData.packagingStatus = itemPackagingStatus
+      if (itemEstimatedWeight) itemData.estimatedWeight = itemEstimatedWeight
+      if (itemEstimatedSize) itemData.estimatedSize = itemEstimatedSize
+      if (itemRequiresBox) itemData.requiresBox = itemRequiresBox
+      if (itemNotes.trim()) itemData.notes = itemNotes.trim()
+
+      // Create item in the top-level items collection
+      const itemRef = await addDoc(collection(db, 'items'), itemData)
+      console.log('✅ Item created with ID:', itemRef.id)
+
+      // Add the item ID to the pickup's items array
+      await updateDoc(doc(db, 'pickups', selectedScheduledPickup), {
+        items: arrayUnion(itemRef.id),
+        updatedAt: serverTimestamp()
+      })
+      console.log('✅ Item ID added to pickup')
+
+      // Reset form
+      setItemDescription('')
+      setItemPackagingStatus('')
+      setItemEstimatedWeight('')
+      setItemEstimatedSize('')
+      setItemRequiresBox(false)
+      setItemNotes('')
+      setItemImageFile(null)
+      setItemImagePreview(null)
+      setQrCodeFile(null)
+      setQrCodePreview(null)
+      setLabelImageFile(null)
+      setLabelImagePreview(null)
+      setShowAddItemModal(false)
+
+      alert('Item added successfully!')
+
+      // Reload items and pickups
+      const [itemsSnap, pickupsSnap] = await Promise.all([
+        getDocs(collection(db, 'items')),
+        getDocs(collection(db, 'pickups'))
+      ])
+      
+      setItems(itemsSnap.docs.map(d => ({ id: d.id, ...d.data() })))
+      setPickups(pickupsSnap.docs.map(d => ({ id: d.id, ...d.data() })))
+    } catch (err) {
+      console.error('Error adding item:', err)
+      alert('Failed to add item: ' + (err?.message || 'Unknown error'))
+    } finally {
+      setSubmittingItem(false)
+    }
+  }
 
   // Filter data based on selected date, status, and selections
   const filteredData = useMemo(() => {
@@ -252,11 +464,12 @@ function Dashboard() {
     
     if (selectedPickup) {
       // Show only items from the selected pickup
-      // First, try to get items from the pickup's subcollection (pickup.items array)
+      // pickup.items is now an array of item IDs
       if (Array.isArray(selectedPickup.items) && selectedPickup.items.length > 0) {
-        selectedPickup.items.forEach(item => {
-          // Items from pickup subcollection are already full objects, not references
-          if (item && typeof item === 'object') {
+        selectedPickup.items.forEach(itemId => {
+          // Find the item in the items collection
+          const item = items.find(i => i.id === itemId)
+          if (item) {
             filteredItems.push({
               ...item,
               pickupId: selectedPickup.id,
@@ -267,7 +480,7 @@ function Dashboard() {
         })
       }
       
-      // Also check the global items collection for items with matching pickupId
+      // Also check for items with matching pickupId (legacy support)
       items.forEach(item => {
         if (item.pickupId === selectedPickup.id) {
           // Avoid duplicates
@@ -285,23 +498,44 @@ function Dashboard() {
       // Show all items from filtered pickups
       filteredPickups.forEach(pickup => {
         if (Array.isArray(pickup.items)) {
-          pickup.items.forEach(item => {
-            // Items from pickup subcollection are already full objects, not references
-            if (item && typeof item === 'object') {
+          pickup.items.forEach(itemId => {
+            // Find the item in the items collection
+            const item = items.find(i => i.id === itemId)
+            if (item) {
               const itemStatus = (item.status || '').toString().toLowerCase()
               const statusMatch = !statusFilter || itemStatus === statusFilter.toLowerCase()
               
               if (statusMatch) {
                 filteredItems.push({
-                ...item,
-                pickupId: pickup.id,
-                pickupReference: pickup.reference || pickup.customerName || pickup.name,
-                pickupAddress: formatPickupAddress(pickup),
+                  ...item,
+                  pickupId: pickup.id,
+                  pickupReference: pickup.reference || pickup.customerName || pickup.name,
+                  pickupAddress: formatPickupAddress(pickup),
                 })
               }
             }
           })
         }
+        
+        // Also check for items with matching pickupId (legacy support)
+        items.forEach(item => {
+          if (item.pickupId === pickup.id) {
+            // Avoid duplicates
+            if (!filteredItems.find(i => i.id === item.id)) {
+              const itemStatus = (item.status || '').toString().toLowerCase()
+              const statusMatch = !statusFilter || itemStatus === statusFilter.toLowerCase()
+              
+              if (statusMatch) {
+                filteredItems.push({
+                  ...item,
+                  pickupId: pickup.id,
+                  pickupReference: pickup.reference || pickup.customerName || pickup.name,
+                  pickupAddress: formatPickupAddress(pickup),
+                })
+              }
+            }
+          }
+        })
       })
     }
 
@@ -314,6 +548,136 @@ function Dashboard() {
         <h1 style={{ color: 'var(--secondary-color)', marginBottom: '0.5rem' }}>Dashboard</h1>
         <p style={{ color: 'var(--accent-color)' }}>Daily overview of routes, pickups, and items</p>
       </section>
+
+      {/* Add Item to Pickup Section */}
+      <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.08)', marginBottom: '2rem' }}>
+        <h2 style={{ color: 'var(--secondary-color)', marginBottom: '1rem', fontSize: '1.25rem' }}>Add Item to Pickup</h2>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
+          <div style={{ flex: '1 1 250px', minWidth: '250px' }}>
+            <label htmlFor="customer-select" style={{ display: 'block', fontWeight: 600, color: 'var(--secondary-color)', marginBottom: '0.5rem' }}>
+              Select Customer
+            </label>
+            <select
+              id="customer-select"
+              value={selectedCustomer}
+              onChange={(e) => setSelectedCustomer(e.target.value)}
+              disabled={loadingCustomers}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: '1px solid var(--border-color)',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                fontFamily: 'inherit',
+                backgroundColor: loadingCustomers ? '#f3f4f6' : 'white',
+                color: 'var(--secondary-color)',
+                cursor: loadingCustomers ? 'not-allowed' : 'pointer'
+              }}
+            >
+              <option value="">
+                {loadingCustomers ? 'Loading customers...' : 'Select a customer'}
+              </option>
+              {customers.map(customer => {
+                const fullName = [customer.firstName, customer.lastName].filter(Boolean).join(' ').trim()
+                const baseName = fullName || customer.email || customer.id
+                const roles = []
+                if (customer.isAdmin) roles.push('Admin')
+                if (customer.isDriver) roles.push('Driver')
+                const roleLabel = roles.length > 0 ? ` (${roles.join(', ')})` : ''
+                const displayName = `${baseName}${roleLabel}`
+                return (
+                  <option key={customer.id} value={customer.id}>
+                    {displayName}
+                  </option>
+                )
+              })}
+            </select>
+          </div>
+
+          <div style={{ flex: '1 1 250px', minWidth: '250px' }}>
+            <label htmlFor="scheduled-pickup-select" style={{ display: 'block', fontWeight: 600, color: 'var(--secondary-color)', marginBottom: '0.5rem' }}>
+              Select Scheduled Pickup
+            </label>
+            <select
+              id="scheduled-pickup-select"
+              value={selectedScheduledPickup}
+              onChange={(e) => setSelectedScheduledPickup(e.target.value)}
+              disabled={!selectedCustomer || customerScheduledPickups.length === 0}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: '1px solid var(--border-color)',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                fontFamily: 'inherit',
+                backgroundColor: (!selectedCustomer || customerScheduledPickups.length === 0) ? '#f3f4f6' : 'white',
+                color: 'var(--secondary-color)',
+                cursor: (!selectedCustomer || customerScheduledPickups.length === 0) ? 'not-allowed' : 'pointer'
+              }}
+            >
+              <option value="">
+                {!selectedCustomer 
+                  ? 'Select a customer first' 
+                  : customerScheduledPickups.length === 0 
+                    ? 'No scheduled pickups available' 
+                    : 'Select a scheduled pickup'}
+              </option>
+              {customerScheduledPickups.map(pickup => {
+                const pickupDate = toDateMaybe(pickup.scheduledTime || pickup.scheduledWindowStart || pickup.scheduledAt)
+                const dateStr = pickupDate ? pickupDate.toLocaleDateString('en-US', { 
+                  weekday: 'short', 
+                  month: 'short', 
+                  day: 'numeric',
+                  year: 'numeric'
+                }) : 'No date'
+                const timeStr = pickupDate ? pickupDate.toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit'
+                }) : ''
+                const address = formatPickupAddress(pickup)
+                const displayText = `${dateStr} ${timeStr ? `at ${timeStr}` : ''} ${address ? `- ${address}` : ''}`
+                return (
+                  <option key={pickup.id} value={pickup.id}>
+                    {displayText}
+                  </option>
+                )
+              })}
+            </select>
+          </div>
+
+          <button
+            onClick={() => {
+              if (selectedScheduledPickup) {
+                setShowAddItemModal(true)
+              }
+            }}
+            disabled={!selectedScheduledPickup}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: selectedScheduledPickup ? 'var(--primary-color)' : '#9ca3af',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: selectedScheduledPickup ? 'pointer' : 'not-allowed',
+              fontWeight: 600,
+              fontSize: '1rem',
+              transition: 'opacity 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              if (selectedScheduledPickup) {
+                e.target.style.opacity = '0.9'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (selectedScheduledPickup) {
+                e.target.style.opacity = '1'
+              }
+            }}
+          >
+            Add Item
+          </button>
+        </div>
+      </div>
 
       {/* Filters */}
       <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.08)', marginBottom: '2rem' }}>
@@ -1207,6 +1571,474 @@ function Dashboard() {
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Item Modal */}
+      {showAddItemModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+          }}
+          onClick={() => !submittingItem && setShowAddItemModal(false)}
+        >
+          <div 
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              maxWidth: '600px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{
+              padding: '1.5rem',
+              borderBottom: '1px solid var(--border-color)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              position: 'sticky',
+              top: 0,
+              backgroundColor: 'white',
+              zIndex: 1
+            }}>
+              <h2 style={{ margin: 0, color: 'var(--secondary-color)' }}>Add Item to Pickup</h2>
+              <button
+                onClick={() => !submittingItem && setShowAddItemModal(false)}
+                disabled={submittingItem}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: submittingItem ? 'not-allowed' : 'pointer',
+                  color: 'var(--accent-color)',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '4px',
+                  transition: 'background-color 0.2s',
+                  opacity: submittingItem ? 0.5 : 1
+                }}
+                onMouseEnter={(e) => !submittingItem && (e.target.style.backgroundColor = '#f3f4f6')}
+                onMouseLeave={(e) => !submittingItem && (e.target.style.backgroundColor = 'transparent')}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ padding: '1.5rem' }}>
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                handleAddItem()
+              }}>
+                {/* Item Image Upload */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label htmlFor="item-image" style={{ display: 'block', fontWeight: 600, color: 'var(--secondary-color)', marginBottom: '0.5rem' }}>
+                    Item Photo
+                  </label>
+                  <input
+                    type="file"
+                    id="item-image"
+                    accept="image/*"
+                    disabled={submittingItem}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleImageSelect(file, setItemImageFile, setItemImagePreview)
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit',
+                      color: '#1f2937',
+                      backgroundColor: 'white'
+                    }}
+                  />
+                  {itemImagePreview && (
+                    <div style={{ marginTop: '0.75rem', position: 'relative' }}>
+                      <img 
+                        src={itemImagePreview} 
+                        alt="Item preview" 
+                        style={{ 
+                          width: '100%', 
+                          maxHeight: '200px', 
+                          objectFit: 'contain', 
+                          borderRadius: '8px',
+                          border: '1px solid var(--border-color)'
+                        }} 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setItemImageFile(null)
+                          setItemImagePreview(null)
+                        }}
+                        disabled={submittingItem}
+                        style={{
+                          position: 'absolute',
+                          top: '0.5rem',
+                          right: '0.5rem',
+                          backgroundColor: 'rgba(220, 38, 38, 0.9)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '2rem',
+                          height: '2rem',
+                          cursor: submittingItem ? 'not-allowed' : 'pointer',
+                          fontSize: '1rem',
+                          fontWeight: 700
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* QR Code Upload */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label htmlFor="qr-code" style={{ display: 'block', fontWeight: 600, color: 'var(--secondary-color)', marginBottom: '0.5rem' }}>
+                    QR Code
+                  </label>
+                  <input
+                    type="file"
+                    id="qr-code"
+                    accept="image/*"
+                    disabled={submittingItem}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleImageSelect(file, setQrCodeFile, setQrCodePreview)
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit',
+                      color: '#1f2937',
+                      backgroundColor: 'white'
+                    }}
+                  />
+                  {qrCodePreview && (
+                    <div style={{ marginTop: '0.75rem', position: 'relative' }}>
+                      <img 
+                        src={qrCodePreview} 
+                        alt="QR code preview" 
+                        style={{ 
+                          width: '100%', 
+                          maxHeight: '200px', 
+                          objectFit: 'contain', 
+                          borderRadius: '8px',
+                          border: '1px solid var(--border-color)'
+                        }} 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQrCodeFile(null)
+                          setQrCodePreview(null)
+                        }}
+                        disabled={submittingItem}
+                        style={{
+                          position: 'absolute',
+                          top: '0.5rem',
+                          right: '0.5rem',
+                          backgroundColor: 'rgba(220, 38, 38, 0.9)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '2rem',
+                          height: '2rem',
+                          cursor: submittingItem ? 'not-allowed' : 'pointer',
+                          fontSize: '1rem',
+                          fontWeight: 700
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Label Image Upload */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label htmlFor="label-image" style={{ display: 'block', fontWeight: 600, color: 'var(--secondary-color)', marginBottom: '0.5rem' }}>
+                    Label Image
+                  </label>
+                  <input
+                    type="file"
+                    id="label-image"
+                    accept="image/*"
+                    disabled={submittingItem}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleImageSelect(file, setLabelImageFile, setLabelImagePreview)
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit',
+                      color: '#1f2937',
+                      backgroundColor: 'white'
+                    }}
+                  />
+                  {labelImagePreview && (
+                    <div style={{ marginTop: '0.75rem', position: 'relative' }}>
+                      <img 
+                        src={labelImagePreview} 
+                        alt="Label preview" 
+                        style={{ 
+                          width: '100%', 
+                          maxHeight: '200px', 
+                          objectFit: 'contain', 
+                          borderRadius: '8px',
+                          border: '1px solid var(--border-color)'
+                        }} 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLabelImageFile(null)
+                          setLabelImagePreview(null)
+                        }}
+                        disabled={submittingItem}
+                        style={{
+                          position: 'absolute',
+                          top: '0.5rem',
+                          right: '0.5rem',
+                          backgroundColor: 'rgba(220, 38, 38, 0.9)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '2rem',
+                          height: '2rem',
+                          cursor: submittingItem ? 'not-allowed' : 'pointer',
+                          fontSize: '1rem',
+                          fontWeight: 700
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Item Description */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label htmlFor="item-description" style={{ display: 'block', fontWeight: 600, color: 'var(--secondary-color)', marginBottom: '0.5rem' }}>
+                    Item Description *
+                  </label>
+                  <textarea
+                    id="item-description"
+                    value={itemDescription}
+                    onChange={(e) => setItemDescription(e.target.value)}
+                    required
+                    disabled={submittingItem}
+                    placeholder="Describe the item to be picked up..."
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit',
+                      resize: 'vertical',
+                      color: '#1f2937',
+                      backgroundColor: 'white'
+                    }}
+                  />
+                </div>
+
+                {/* Packaging Status */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label htmlFor="item-packaging" style={{ display: 'block', fontWeight: 600, color: 'var(--secondary-color)', marginBottom: '0.5rem' }}>
+                    Packaging Status
+                  </label>
+                  <select
+                    id="item-packaging"
+                    value={itemPackagingStatus}
+                    onChange={(e) => setItemPackagingStatus(e.target.value)}
+                    disabled={submittingItem}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit',
+                      color: '#1f2937',
+                      backgroundColor: 'white'
+                    }}
+                  >
+                    <option value="">Select packaging status</option>
+                    <option value="Label already attached">Label already attached</option>
+                    <option value="Needs label">Needs label</option>
+                    <option value="QR code only">QR code only</option>
+                    <option value="Boxed">Boxed</option>
+                    <option value="Unboxed">Unboxed</option>
+                  </select>
+                </div>
+
+                {/* Estimated Weight */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label htmlFor="item-weight" style={{ display: 'block', fontWeight: 600, color: 'var(--secondary-color)', marginBottom: '0.5rem' }}>
+                    Estimated Weight
+                  </label>
+                  <select
+                    id="item-weight"
+                    value={itemEstimatedWeight}
+                    onChange={(e) => setItemEstimatedWeight(e.target.value)}
+                    disabled={submittingItem}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit',
+                      color: '#1f2937',
+                      backgroundColor: 'white'
+                    }}
+                  >
+                    <option value="">Select weight</option>
+                    <option value="< 1 lb">Less than 1 lb</option>
+                    <option value="1-5 lbs">1-5 lbs</option>
+                    <option value="5-10 lbs">5-10 lbs</option>
+                    <option value="10-20 lbs">10-20 lbs</option>
+                    <option value="20+ lbs">20+ lbs</option>
+                  </select>
+                </div>
+
+                {/* Estimated Size */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label htmlFor="item-size" style={{ display: 'block', fontWeight: 600, color: 'var(--secondary-color)', marginBottom: '0.5rem' }}>
+                    Estimated Size
+                  </label>
+                  <select
+                    id="item-size"
+                    value={itemEstimatedSize}
+                    onChange={(e) => setItemEstimatedSize(e.target.value)}
+                    disabled={submittingItem}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit',
+                      color: '#1f2937',
+                      backgroundColor: 'white'
+                    }}
+                  >
+                    <option value="">Select size</option>
+                    <option value="Envelope">Envelope</option>
+                    <option value="Small box">Small box</option>
+                    <option value="Medium box">Medium box</option>
+                    <option value="Large box">Large box</option>
+                    <option value="Extra large">Extra large</option>
+                  </select>
+                </div>
+
+                {/* Requires Box */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: submittingItem ? 'not-allowed' : 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={itemRequiresBox}
+                      onChange={(e) => setItemRequiresBox(e.target.checked)}
+                      disabled={submittingItem}
+                      style={{ width: '1.25rem', height: '1.25rem', cursor: submittingItem ? 'not-allowed' : 'pointer' }}
+                    />
+                    <span style={{ fontWeight: 600, color: 'var(--secondary-color)' }}>Requires a box</span>
+                  </label>
+                </div>
+
+                {/* Notes */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label htmlFor="item-notes" style={{ display: 'block', fontWeight: 600, color: 'var(--secondary-color)', marginBottom: '0.5rem' }}>
+                    Notes
+                  </label>
+                  <textarea
+                    id="item-notes"
+                    value={itemNotes}
+                    onChange={(e) => setItemNotes(e.target.value)}
+                    disabled={submittingItem}
+                    placeholder="Additional notes about this item..."
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit',
+                      resize: 'vertical',
+                      color: '#1f2937',
+                      backgroundColor: 'white'
+                    }}
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddItemModal(false)}
+                    disabled={submittingItem}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      backgroundColor: 'white',
+                      color: 'var(--secondary-color)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      cursor: submittingItem ? 'not-allowed' : 'pointer',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      opacity: submittingItem ? 0.5 : 1
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingItem || !itemDescription.trim()}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      backgroundColor: (submittingItem || !itemDescription.trim()) ? '#9ca3af' : 'var(--primary-color)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: (submittingItem || !itemDescription.trim()) ? 'not-allowed' : 'pointer',
+                      fontWeight: 600,
+                      fontSize: '1rem'
+                    }}
+                  >
+                    {submittingItem ? 'Adding...' : 'Add Item'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

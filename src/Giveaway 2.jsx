@@ -15,7 +15,7 @@ const FIREBASE_FUNCTIONS_BASE_URL = import.meta.env.VITE_FIREBASE_URL
 // Toggle to show/hide Family plan - set to false to hide it
 const showFamilyPlan = false
 
-function Free() {
+function Giveaway() {
   const navigate = useNavigate()
   const location = useLocation()
   
@@ -38,13 +38,9 @@ function Free() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [receiveTextUpdates, setReceiveTextUpdates] = useState(false)
-  const [promoCode, setPromoCode] = useState('HOLIDAYS') // Auto-apply HOLIDAYS promo code
-  const [userPromoCode, setUserPromoCode] = useState('') // Track user-entered promo code
+  const [promoCode, setPromoCode] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [promoCodeError, setPromoCodeError] = useState('')
-  const [promoCodeValidating, setPromoCodeValidating] = useState(false)
-  const [promoCodeValidated, setPromoCodeValidated] = useState(false)
   const [costcoCardImage, setCostcoCardImage] = useState(null)
   const [costcoCardPreview, setCostcoCardPreview] = useState(null)
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -211,7 +207,7 @@ function Free() {
 
   // Scroll to top on mount
   useEffect(() => {
-    console.log('📄 SignUp component mounted');
+    console.log('📄 Giveaway component mounted');
     console.log('Initial state:', {
       planType,
       billingCycle,
@@ -286,47 +282,10 @@ function Free() {
   }
 
 
-  // Function to validate promo code with backend
-  const validatePromoCode = async (code, priceId) => {
-    if (!code.trim()) {
-      return { valid: true } // Empty promo code is valid (optional field)
-    }
-
-    try {
-      setPromoCodeValidating(true)
-      setPromoCodeError('')
-      
-      const response = await fetch(`${FIREBASE_FUNCTIONS_BASE_URL}/validate_promo_code`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          promo_code: code.trim(),
-          price_id: priceId
-        })
-      })
-
-      const data = await response.json()
-      
-      if (!response.ok || data.status === 'error') {
-        throw new Error(data.message || 'Failed to validate promo code')
-      }
-
-      return data
-    } catch (err) {
-      console.error('Error validating promo code:', err)
-      throw err
-    } finally {
-      setPromoCodeValidating(false)
-    }
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('📝 Form submission started');
     setError('');
-    setPromoCodeError('');
 
     try {
       console.group('✅ Form Validation');
@@ -396,29 +355,14 @@ function Free() {
         throw new Error('Please enter a valid email address');
       }
 
-      // Validate promo code with backend if subscription plan
+      // Validate promo code if entered
       if (promoCode.trim() && planType === 'subscription') {
-        console.log('Validating promo code with backend:', promoCode.trim().toUpperCase());
-        
-        // Determine price ID for validation
-        let priceId = billingCycle === 'yearly' 
-          ? subscriptionPlans[selectedPlan].priceYearlyId 
-          : subscriptionPlans[selectedPlan].priceMonthlyId;
-        
-        const validation = await validatePromoCode(promoCode, priceId);
-        
-        if (!validation.valid) {
-          setPromoCodeError(validation.message || 'Invalid promo code');
-          throw new Error(validation.message || 'Invalid promo code');
+        console.log('Validating promo code:', promoCode.trim().toUpperCase());
+        const validPromoCodes = ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'CAMI', 'MIKAELA', 'JEZNI', 'HAULZY-INFLUENCER', 'INFLUENCER'];
+        if (!validPromoCodes.includes(promoCode.trim().toUpperCase())) {
+          throw new Error(`Invalid promo code: "${promoCode}"`);
         }
-        
-        console.log('✅ Promo code validated successfully:', validation);
-        setPromoCodeValidated(true);
-      }
-      
-      // Log user-entered promo code for tracking (no validation needed)
-      if (userPromoCode.trim()) {
-        console.log('User entered promo code:', userPromoCode.trim());
+        console.log('✅ Promo code is valid');
       }
       
       console.log('✅ All validations passed');
@@ -480,10 +424,6 @@ function Free() {
         receiveTextUpdates: receiveTextUpdates,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        ...(userPromoCode.trim() && {
-          signupPromoCode: userPromoCode.trim().toUpperCase(),
-          signupPromoCodeEnteredAt: new Date().toISOString()
-        }),
         ...(costcoCardData && {
           costcoCard: {
             url: costcoCardData.downloadUrl,
@@ -700,7 +640,6 @@ function Free() {
       backgroundColor: '#f8f9fa',
       paddingBottom: window.innerWidth <= 768 ? '2rem' : '1.5rem'
     }}>
-
       {submitting && (
         <div
           style={{
@@ -741,7 +680,7 @@ function Free() {
               padding: '0 1rem'
             }}
           >
-            Getting you started with Haulzy
+            Signing you up for Haulzy
           </h2>
           <p
             style={{
@@ -757,7 +696,7 @@ function Free() {
           >
             {uploadingImage 
               ? "Uploading your Costco card image..." 
-              : "We're setting up your free account and preparing your checkout session..."}
+              : "We're setting up your account and preparing your checkout session..."}
           </p>
         </div>
       )}
@@ -1050,11 +989,6 @@ function Free() {
                     if (planId === 'premium' && !showPremiumPlan) return false
                     return billingCycle === 'yearly' || planId !== 'family'
                   })
-                  .sort(([planIdA], [planIdB]) => {
-                    // Define the desired order: basic, premium, family
-                    const order = { basic: 1, premium: 2, family: 3 }
-                    return (order[planIdA] || 999) - (order[planIdB] || 999)
-                  })
                 
                 const planCount = visiblePlans.length
                 
@@ -1156,37 +1090,11 @@ function Free() {
                             .filter(f => {
                               // For Basic plan, only show "All online returns" and "2 pickups per month"
                               if (planId === 'basic') {
-                                const isOnlineReturns = f.toLowerCase().includes('ups')
+                                const isOnlineReturns = f.toLowerCase().includes('all online returns')
                                 const isPickups = f.toLowerCase().includes('2 pickups per month') || f.toLowerCase().includes('2 pickup')
                                 return isOnlineReturns || isPickups
                               }
                               return true
-                            })
-                            .sort((a, b) => {
-                              // Define the desired order for features
-                              const featureOrder = [
-                                'pickup', // "2 pickups per month" or "Unlimited pickups"
-                                'online return', // "All online returns"
-                                'costco',
-                                'marketplace',
-                                'packaging',
-                                'label',
-                                'deseret',
-                                'donation'
-                              ]
-                              
-                              // Find the index of each feature in the order array
-                              const getOrderIndex = (feature) => {
-                                const lowerFeature = feature.toLowerCase()
-                                for (let i = 0; i < featureOrder.length; i++) {
-                                  if (lowerFeature.includes(featureOrder[i])) {
-                                    return i
-                                  }
-                                }
-                                return featureOrder.length // Put unmatched features at the end
-                              }
-                              
-                              return getOrderIndex(a) - getOrderIndex(b)
                             })
                             .map((f, idx) => (
                             <li key={idx} style={{
@@ -1265,7 +1173,6 @@ function Free() {
                   {visiblePlans.map(([planId, plan]) => {
                       const { amount, period } = getDisplayPrice(planId)
                       const isSelected = selectedPlan === planId
-                      const isBasicPlan = planId === 'basic'
                       return (
                         <button
                           key={planId}
@@ -1321,33 +1228,13 @@ function Free() {
                               ✓
                             </div>
                           )}
-                          {isBasicPlan && (
-                            <div style={{
-                              position: 'absolute',
-                              top: window.innerWidth <= 480 ? '-10px' : '-12px',
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              backgroundColor: '#FFD700',
-                              color: '#000',
-                              fontSize: window.innerWidth <= 480 ? '0.7rem' : '0.75rem',
-                              fontWeight: 700,
-                              padding: window.innerWidth <= 480 ? '0.3rem 0.6rem' : '0.35rem 0.75rem',
-                              borderRadius: '999px',
-                              boxShadow: '0 2px 8px rgba(255, 215, 0, 0.4)',
-                              whiteSpace: 'nowrap',
-                              border: '2px solid #FFA500'
-                            }}>
-                              🎉 Free for 2 months
-                            </div>
-                          )}
                           <h3 style={{
                             margin: 0,
                             fontSize: window.innerWidth <= 480 ? '1rem' : window.innerWidth <= 768 ? '1.15rem' : '1.35rem',
                             fontWeight: 700,
                             fontFamily: 'var(--font-heading)',
                             textAlign: 'center',
-                            lineHeight: 1.2,
-                            marginTop: isBasicPlan ? (window.innerWidth <= 480 ? '0.5rem' : '0.75rem') : 0
+                            lineHeight: 1.2
                           }}>
                             {plan.name}
                           </h3>
@@ -1413,31 +1300,8 @@ function Free() {
                       })
                     })
                     
-                    // Sort features in the desired order
-                    const featureOrder = [
-                      'pickup', // "2 pickups per month" or "Unlimited pickups"
-                      'online return', // "All online returns"
-                      'costco',
-                      'marketplace',
-                      'packaging',
-                      'label',
-                      'deseret',
-                      'donation'
-                    ]
-                    
-                    const getOrderIndex = (feature) => {
-                      const lowerFeature = feature.toLowerCase()
-                      for (let i = 0; i < featureOrder.length; i++) {
-                        if (lowerFeature.includes(featureOrder[i])) {
-                          return i
-                        }
-                      }
-                      return featureOrder.length // Put unmatched features at the end
-                    }
-                    
-                    const sortedFeatures = Array.from(allFeatures).sort((a, b) => {
-                      return getOrderIndex(a) - getOrderIndex(b)
-                    })
+                    // Use features in the order they come from Firestore
+                    const sortedFeatures = Array.from(allFeatures)
 
                     return sortedFeatures.map((feature, idx) => (
                       <div key={idx} style={{
@@ -1474,17 +1338,12 @@ function Free() {
                           )
                           const showUnlimited = isPickupFeature && !hasFeature && hasUnlimitedPickups
                           
-                          // Check if this is "All online returns" feature
+                          // Check if this is "All online returns" and plan has Costco returns (which includes all online returns)
                           const isOnlineReturnsFeature = feature.toLowerCase().includes('all online returns')
-                          
-                          // Basic plan should always show checkmark for "All online returns"
-                          // Premium/other plans show checkmark if they have the feature OR if they have Costco returns (which includes all online returns)
-                          const hasOnlineReturnsFeature = plan.features.some(f => 
-                            f.toLowerCase().includes('all online returns') || 
-                            f.toLowerCase().includes('ups') ||
-                            (f.toLowerCase().includes('costco') && f.toLowerCase().includes('return'))
+                          const hasCostcoReturns = plan.features.some(f => 
+                            f.toLowerCase().includes('costco') && f.toLowerCase().includes('return')
                           )
-                          const showCheckForReturns = isOnlineReturnsFeature && !hasFeature && hasOnlineReturnsFeature
+                          const showCheckForReturns = isOnlineReturnsFeature && !hasFeature && hasCostcoReturns
                           
                           return (
                             <div
@@ -1643,7 +1502,7 @@ function Free() {
             color: 'var(--text-dark)', 
             fontFamily: 'var(--font-heading)',
             fontSize: window.innerWidth <= 480 ? '1.35rem' : window.innerWidth <= 768 ? '1.5rem' : '1.75rem'
-          }}>Get Started with Haulzy</h2>
+          }}>Sign Up for Haulzy</h2>
 
           {error && (
             <div style={{ 
@@ -1918,58 +1777,42 @@ function Free() {
             </div>
             )}
 
-            {/* User Promo Code Input */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: window.innerWidth <= 480 ? '0.375rem' : '0.5rem'
-            }}>
-              <label style={{
-                fontWeight: 600,
-                color: 'var(--text-dark)',
-                fontFamily: 'var(--font-body)',
-                fontSize: window.innerWidth <= 480 ? '0.875rem' : window.innerWidth <= 768 ? '0.95rem' : '1rem'
-              }}>
-                Promo Code (Optional)
-              </label>
-              <input
-                type="text"
-                placeholder="Enter promo code"
-                value={userPromoCode}
-                onChange={(e) => {
-                  setUserPromoCode(e.target.value)
-                  setPromoCodeError('')
-                  setPromoCodeValidated(false)
-                }}
-                style={{
-                  ...inputStyle,
-                  textTransform: 'uppercase',
-                  borderColor: promoCodeError ? '#dc2626' : promoCodeValidated ? 'var(--primary-color)' : 'var(--border-color)'
-                }}
-              />
-              {promoCodeError && (
-                <p style={{
-                  margin: 0,
-                  fontSize: window.innerWidth <= 480 ? '0.75rem' : window.innerWidth <= 768 ? '0.8rem' : '0.85rem',
-                  color: '#dc2626',
-                  fontFamily: 'var(--font-body)',
-                  fontWeight: 600
-                }}>
-                  ⚠️ {promoCodeError}
-                </p>
-              )}
-              {promoCodeValidated && !promoCodeError && (
-                <p style={{
-                  margin: 0,
-                  fontSize: window.innerWidth <= 480 ? '0.75rem' : window.innerWidth <= 768 ? '0.8rem' : '0.85rem',
-                  color: 'var(--primary-color)',
-                  fontFamily: 'var(--font-body)',
-                  fontWeight: 600
-                }}>
-                  ✓ Promo code applied successfully
-                </p>
-              )}
-            </div>
+            {/* Promo Code Input - Only show for subscription plans */}
+            {planType === 'subscription' && (
+              <div style={{ position: 'relative' }}>
+                <input 
+                  type="text" 
+                  placeholder="Promo Code (optional)" 
+                  value={promoCode} 
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())} 
+                  style={{
+                    ...inputStyle,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    paddingRight: promoCode && ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'CAMI', 'MIKAELA', 'JEZNI', 'HAULZY-INFLUENCER', 'INFLUENCER'].includes(promoCode.toUpperCase()) 
+                      ? window.innerWidth <= 480 ? '90px' : '110px' 
+                      : inputStyle.paddingRight
+                  }} 
+                />
+                {promoCode && ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'CAMI', 'MIKAELA', 'JEZNI', 'HAULZY-INFLUENCER', 'INFLUENCER'].includes(promoCode.toUpperCase()) && (
+                  <span style={{
+                    position: 'absolute',
+                    right: window.innerWidth <= 480 ? '8px' : '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--primary-color)',
+                    fontWeight: '600',
+                    fontSize: window.innerWidth <= 480 ? '0.75rem' : '0.85rem',
+                    backgroundColor: 'rgba(0, 191, 179, 0.1)',
+                    padding: window.innerWidth <= 480 ? '3px 6px' : '4px 8px',
+                    borderRadius: '4px',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {promoCode.toUpperCase() === 'HAULZY-INFLUENCER' ? '1 year free' : promoCode.toUpperCase() === 'INFLUENCER' ? '3 mo free' : '2 mo free'}
+                  </span>
+                )}
+              </div>
+            )}
 
             <label style={{ 
                 display: 'flex', 
@@ -2014,12 +1857,12 @@ function Free() {
                   }
                 }}
               />
-              <span style={{ flex: 1, lineHeight: 1.4 }}>Receive updates and support through text</span>
+              <span style={{ flex: 1, lineHeight: 1.4 }}>Receive text updates about your packages</span>
             </label>
 
           <button 
             type="submit" 
-            disabled={submitting || promoCodeValidating}
+            disabled={submitting}
             onClick={(e) => {
               console.log('🖱️ Button clicked!');
               console.log('Button type:', e.currentTarget.type);
@@ -2028,33 +1871,33 @@ function Free() {
             }}
             style={{ 
                 padding: window.innerWidth <= 480 ? '1rem' : window.innerWidth <= 768 ? '1rem 1.25rem' : '1rem 1.5rem',
-                background: (submitting || promoCodeValidating) ? 'var(--border-color)' : 'var(--primary-color)',
+                background: submitting ? 'var(--border-color)' : 'var(--primary-color)',
                 color: 'var(--text-light)',
               border: 'none',
                 borderRadius: window.innerWidth <= 480 ? '8px' : '10px',
                 fontWeight: 700,
-              cursor: (submitting || promoCodeValidating) ? 'not-allowed' : 'pointer',
-              opacity: (submitting || promoCodeValidating) ? 0.7 : 1,
+              cursor: submitting ? 'not-allowed' : 'pointer',
+              opacity: submitting ? 0.7 : 1,
                 fontFamily: 'var(--font-body)',
                 transition: 'all 0.2s ease',
-                boxShadow: (submitting || promoCodeValidating) ? 'none' : '0 2px 4px rgba(0, 191, 179, 0.2)',
+                boxShadow: submitting ? 'none' : '0 2px 4px rgba(0, 191, 179, 0.2)',
                 minHeight: window.innerWidth <= 480 ? '48px' : '52px',
                 fontSize: window.innerWidth <= 480 ? '1rem' : window.innerWidth <= 768 ? '1.1rem' : '1.05rem',
             }}
             onMouseEnter={(e) => {
-              if (!submitting && !promoCodeValidating && window.innerWidth > 768) {
+              if (!submitting && window.innerWidth > 768) {
                 e.currentTarget.style.transform = 'translateY(-2px)'
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 191, 179, 0.3)'
               }
             }}
             onMouseLeave={(e) => {
-              if (!submitting && !promoCodeValidating && window.innerWidth > 768) {
+              if (!submitting && window.innerWidth > 768) {
                 e.currentTarget.style.transform = 'translateY(0)'
                 e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 191, 179, 0.2)'
               }
             }}
           >
-            {promoCodeValidating ? 'Validating promo code...' : submitting ? 'Creating account...' : 'Sign Up'}
+            {submitting ? 'Creating account...' : 'Sign Up'}
           </button>
 
             <div style={{ 
@@ -2097,4 +1940,4 @@ const inputStyle = {
   boxSizing: 'border-box',
 };
 
-export default Free;
+export default Giveaway;
