@@ -38,8 +38,7 @@ function Free() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [receiveTextUpdates, setReceiveTextUpdates] = useState(false)
-  const [promoCode, setPromoCode] = useState('HOLIDAYS') // Auto-apply HOLIDAYS promo code
-  const [userPromoCode, setUserPromoCode] = useState('') // Track user-entered promo code
+  const [promoCode, setPromoCode] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [promoCodeError, setPromoCodeError] = useState('')
@@ -230,6 +229,25 @@ function Free() {
     });
   }, [planType, billingCycle, selectedPlan]);
 
+  // Auto-apply STARTER promo code for Basic Monthly
+  useEffect(() => {
+    // Only auto-apply if we're on Basic Monthly subscription
+    const shouldApplyStarter = planType === 'subscription' && selectedPlan === 'basic' && billingCycle === 'monthly';
+    
+    if (shouldApplyStarter && promoCode !== 'STARTER') {
+      console.log('🎟️ Auto-applying STARTER promo code for Basic Monthly');
+      setPromoCode('STARTER');
+      setPromoCodeError('');
+      setPromoCodeValidated(false);
+    } else if (!shouldApplyStarter && promoCode === 'STARTER') {
+      // Clear STARTER code if user switches away from Basic Monthly
+      console.log('🎟️ Clearing STARTER promo code (plan changed)');
+      setPromoCode('');
+      setPromoCodeError('');
+      setPromoCodeValidated(false);
+    }
+  }, [planType, selectedPlan, billingCycle, promoCode]);
+
   // Fetch price data from Firestore
   useEffect(() => {
     async function fetchPriceData() {
@@ -416,11 +434,6 @@ function Free() {
         setPromoCodeValidated(true);
       }
       
-      // Log user-entered promo code for tracking (no validation needed)
-      if (userPromoCode.trim()) {
-        console.log('User entered promo code:', userPromoCode.trim());
-      }
-      
       console.log('✅ All validations passed');
       console.groupEnd();
 
@@ -480,8 +493,8 @@ function Free() {
         receiveTextUpdates: receiveTextUpdates,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        ...(userPromoCode.trim() && {
-          signupPromoCode: userPromoCode.trim().toUpperCase(),
+        ...(promoCode.trim() && {
+          signupPromoCode: promoCode.trim().toUpperCase(),
           signupPromoCodeEnteredAt: new Date().toISOString()
         }),
         ...(costcoCardData && {
@@ -1020,26 +1033,43 @@ function Free() {
                     }}>
                       Save 10%
                     </span>
-                    {billingCycle === 'yearly' && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '-8px',
-                        right: '-8px',
-                        backgroundColor: 'var(--primary-color)',
-                        color: 'white',
-                        fontSize: window.innerWidth <= 480 ? '0.65rem' : '0.75rem',
-                        fontWeight: 700,
-                        padding: window.innerWidth <= 480 ? '0.2rem 0.4rem' : '0.25rem 0.5rem',
-                        borderRadius: '999px',
-                        boxShadow: '0 2px 4px rgba(0, 191, 179, 0.2)',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {window.innerWidth <= 480 ? 'Best' : 'Best Value'}
-                      </div>
-                    )}
+                    <div style={{
+                      position: 'absolute',
+                      top: '-8px',
+                      right: '-8px',
+                      backgroundColor: 'var(--primary-color)',
+                      color: 'white',
+                      fontSize: window.innerWidth <= 480 ? '0.65rem' : '0.75rem',
+                      fontWeight: 700,
+                      padding: window.innerWidth <= 480 ? '0.2rem 0.4rem' : '0.25rem 0.5rem',
+                      borderRadius: '999px',
+                      boxShadow: '0 2px 4px rgba(0, 191, 179, 0.2)',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {window.innerWidth <= 480 ? 'Best' : 'Best Value'}
+                    </div>
                   </div>
                 </div>
               </div>
+
+              {/* Free Trial Banner for Yearly Plans */}
+              {billingCycle === 'yearly' && (
+                <div style={{
+                  backgroundColor: 'rgba(0, 191, 179, 0.08)',
+                  color: 'var(--text-dark)',
+                  padding: window.innerWidth <= 480 ? '0.625rem 0.875rem' : window.innerWidth <= 768 ? '0.75rem 1rem' : '0.875rem 1.25rem',
+                  borderRadius: window.innerWidth <= 480 ? '6px' : '8px',
+                  textAlign: 'center',
+                  fontWeight: 600,
+                  fontSize: window.innerWidth <= 480 ? '0.85rem' : window.innerWidth <= 768 ? '0.9rem' : '0.95rem',
+                  fontFamily: 'var(--font-body)',
+                  border: '1px solid rgba(0, 191, 179, 0.2)',
+                  marginTop: window.innerWidth <= 480 ? '0.5rem' : '0.75rem',
+                  marginBottom: window.innerWidth <= 480 ? '0.75rem' : '1rem'
+                }}>
+                  ✨ Start your 1 month free trial with any yearly plan
+                </div>
+              )}
 
               {/* Subscription Plans Comparison Table */}
               {(() => {
@@ -1321,7 +1351,7 @@ function Free() {
                               ✓
                             </div>
                           )}
-                          {isBasicPlan && (
+                          {isBasicPlan && billingCycle === 'monthly' && (
                             <div style={{
                               position: 'absolute',
                               top: window.innerWidth <= 480 ? '-10px' : '-12px',
@@ -1337,7 +1367,7 @@ function Free() {
                               whiteSpace: 'nowrap',
                               border: '2px solid #FFA500'
                             }}>
-                              🎉 Free for 2 months
+                              🎉 2 months free
                             </div>
                           )}
                           <h3 style={{
@@ -1935,9 +1965,9 @@ function Free() {
               <input
                 type="text"
                 placeholder="Enter promo code"
-                value={userPromoCode}
+                value={promoCode}
                 onChange={(e) => {
-                  setUserPromoCode(e.target.value)
+                  setPromoCode(e.target.value)
                   setPromoCodeError('')
                   setPromoCodeValidated(false)
                 }}

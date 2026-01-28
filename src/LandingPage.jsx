@@ -329,6 +329,14 @@ function LandingPage() {
                   <div style={{ 
                     textAlign: 'center'
                   }}>
+                    <div style={{ 
+                      marginBottom: '0.5rem',
+                      fontWeight: 'bold',
+                      color: '#6b7280',
+                      fontSize: '1rem'
+                    }}>
+                      Pay Per Pickup
+                    </div>
                     {oneTimePlan.features.slice(0, 2).map((feature, idx) => (
                       <div key={idx} style={{ 
                         marginBottom: '0.5rem',
@@ -624,21 +632,22 @@ function LandingPage() {
                   </>
                 )}
               </div>
-              <div 
+              <button 
+                onClick={() => handleSignup('premium')}
                 style={{
-                  backgroundColor: 'rgba(0, 191, 179, 0.1)',
-                  color: 'var(--primary-color)',
-                  border: '2px solid var(--primary-color)',
+                  backgroundColor: 'var(--primary-color)',
+                  color: 'white',
+                  border: 'none',
                   padding: '0.75rem 1.5rem',
                   borderRadius: '8px',
                   fontSize: '1rem',
                   fontWeight: '600',
-                  width: '100%',
-                  textAlign: 'center'
+                  cursor: 'pointer',
+                  width: '100%'
                 }}
               >
-                Coming Soon
-              </div>
+                Go Premium
+              </button>
             </div>
           </div>
           {/* Bottom row - Family plan centered */}
