@@ -82,7 +82,7 @@ function Navigation() {
         <nav className={`nav-menu ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
           {/* Show Download and Pricing buttons on Login and Signup pages */}
           {/* Hide Download and Pricing if admin is on landing page or account page */}
-          {(location.pathname === '/' || location.pathname === '/signup' || location.pathname === '/login' || location.pathname === '/account' || location.pathname === '/offer') && !(isAdmin && (location.pathname === '/' || location.pathname === '/account')) && (
+          {(location.pathname === '/' || location.pathname === '/signup' || location.pathname === '/createaccount' || location.pathname === '/login' || location.pathname === '/account' || location.pathname === '/offer') && !(isAdmin && (location.pathname === '/' || location.pathname === '/account')) && (
             <Link 
               to="/download" 
               className="nav-link download-btn" 
@@ -91,7 +91,7 @@ function Navigation() {
               Download
             </Link>
           )}
-          {(location.pathname === '/' || location.pathname === '/download' || location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/account' || location.pathname === '/offer') && !(isAdmin && (location.pathname === '/' || location.pathname === '/account')) && (
+          {(location.pathname === '/' || location.pathname === '/download' || location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/createaccount' || location.pathname === '/account' || location.pathname === '/offer') && !(isAdmin && (location.pathname === '/' || location.pathname === '/account')) && (
             <button 
               className="nav-link pricing-btn" 
               onClick={handlePricingClick}
@@ -131,16 +131,16 @@ function Navigation() {
               </button>
             </>
           ) : location.pathname === '/login' ? (
-            <Link to="/signup" className="nav-link signup-btn" onClick={closeMobileMenu}>
+            <Link to="/createaccount" className="nav-link signup-btn" onClick={closeMobileMenu}>
               Sign Up
             </Link>
-          ) : location.pathname === '/signup' ? (
+          ) : location.pathname === '/signup' || location.pathname === '/createaccount' ? (
             <Link to="/login" className="nav-link login-btn" onClick={closeMobileMenu}>
               Login
             </Link>
           ) : (location.pathname === '/' || location.pathname === '/download' || location.pathname === '/offer') ? (
             <>
-              <Link to="/signup" className="nav-link signup-btn" onClick={closeMobileMenu}>
+              <Link to="/createaccount" className="nav-link signup-btn" onClick={closeMobileMenu}>
                 Sign Up
               </Link>
               <Link to="/login" className="nav-link login-btn" onClick={closeMobileMenu}>

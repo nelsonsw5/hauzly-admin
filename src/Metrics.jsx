@@ -205,11 +205,9 @@ function Metrics() {
 
       console.log('📊 Fetching financial data directly from Stripe...')
       
-      // Define date range (complete months from Nov 1, 2024)
-      const now = new Date()
-      const projectionStartDate = new Date(Date.UTC(2024, 10, 1, 0, 0, 0)) // Nov 1, 2024
-      const firstOfCurrentMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0))
-      const projectionEndDate = new Date(firstOfCurrentMonth.getTime() - 1000) // End of last complete month
+      // Define date range (complete months from Nov 1, 2025 through Jan 31, 2026)
+      const projectionStartDate = new Date(Date.UTC(2025, 10, 1, 0, 0, 0)) // Nov 1, 2025
+      const projectionEndDate = new Date(Date.UTC(2026, 1, 1, 0, 0, 0) - 1000) // Jan 31, 2026 (end of day)
       
       const projectionStartTimestamp = Math.floor(projectionStartDate.getTime() / 1000)
       const projectionEndTimestamp = Math.floor(projectionEndDate.getTime() / 1000)
@@ -231,26 +229,31 @@ function Metrics() {
       const allSubscriptions = await fetchAllStripeItems('subscriptions')
       console.log(`✅ Found ${allSubscriptions.length} subscriptions`)
       
-      // Calculate total revenue
+      // Calculate total revenue (filtered by date range)
       let totalRevenue = 0
       let subscriptionRevenue = 0
       let onetimeRevenue = 0
       let refunds = 0
       
       for (const charge of allCharges) {
-        if (charge.status === 'succeeded' && !charge.refunded) {
-          const amount = charge.amount / 100
-          totalRevenue += amount
-          
-          if (charge.invoice) {
-            subscriptionRevenue += amount
-          } else {
-            onetimeRevenue += amount
-          }
-        }
+        const chargeDate = new Date(charge.created * 1000)
         
-        if (charge.refunded) {
-          refunds += charge.amount_refunded / 100
+        // Only include charges within the date range
+        if (chargeDate >= projectionStartDate && chargeDate <= projectionEndDate) {
+          if (charge.status === 'succeeded' && !charge.refunded) {
+            const amount = charge.amount / 100
+            totalRevenue += amount
+            
+            if (charge.invoice) {
+              subscriptionRevenue += amount
+            } else {
+              onetimeRevenue += amount
+            }
+          }
+          
+          if (charge.refunded) {
+            refunds += charge.amount_refunded / 100
+          }
         }
       }
       
@@ -270,42 +273,47 @@ function Metrics() {
         }
       }
       
-      // Calculate revenue per customer
+      // Calculate revenue per customer (filtered by date range)
       for (const charge of allCharges) {
-        if (charge.status === 'succeeded' && !charge.refunded && charge.customer) {
-          const customerId = charge.customer
-          
-          if (!revenueByCustomer[customerId]) {
-            const customerInfo = customerMap[customerId] || { name: 'Unknown', email: '', created: charge.created }
-            revenueByCustomer[customerId] = {
-              customerId,
-              name: customerInfo.name,
-              email: customerInfo.email,
-              revenue: 0,
-              monthlyRevenue: 0,
-              transactionCount: 0,
-              created: customerInfo.created
+        const chargeDate = new Date(charge.created * 1000)
+        
+        // Only include charges within the date range
+        if (chargeDate >= projectionStartDate && chargeDate <= projectionEndDate) {
+          if (charge.status === 'succeeded' && !charge.refunded && charge.customer) {
+            const customerId = charge.customer
+            
+            if (!revenueByCustomer[customerId]) {
+              const customerInfo = customerMap[customerId] || { name: 'Unknown', email: '', created: charge.created }
+              revenueByCustomer[customerId] = {
+                customerId,
+                name: customerInfo.name,
+                email: customerInfo.email,
+                revenue: 0,
+                monthlyRevenue: 0,
+                transactionCount: 0,
+                created: customerInfo.created
+              }
             }
+            
+            const chargeAmount = charge.amount / 100
+            revenueByCustomer[customerId].revenue += chargeAmount
+            revenueByCustomer[customerId].transactionCount += 1
+            
+            // Calculate monthly equivalent (divide yearly by 12)
+            let monthlyAmount = chargeAmount
+            
+            // Detect yearly subscriptions by amount
+            // Basic yearly: $87, Premium yearly: $162
+            const isYearlySubscription = chargeAmount === 87 || chargeAmount === 162
+            
+            if (isYearlySubscription) {
+              monthlyAmount = chargeAmount / 12
+              yearlySubscriptionCount++
+              console.log(`🔍 Detected yearly subscription: $${chargeAmount} → Monthly equivalent: $${monthlyAmount.toFixed(2)}`)
+            }
+            
+            revenueByCustomer[customerId].monthlyRevenue += monthlyAmount
           }
-          
-          const chargeAmount = charge.amount / 100
-          revenueByCustomer[customerId].revenue += chargeAmount
-          revenueByCustomer[customerId].transactionCount += 1
-          
-          // Calculate monthly equivalent (divide yearly by 12)
-          let monthlyAmount = chargeAmount
-          
-          // Detect yearly subscriptions by amount
-          // Basic yearly: $87, Premium yearly: $162
-          const isYearlySubscription = chargeAmount === 87 || chargeAmount === 162
-          
-          if (isYearlySubscription) {
-            monthlyAmount = chargeAmount / 12
-            yearlySubscriptionCount++
-            console.log(`🔍 Detected yearly subscription: $${chargeAmount} → Monthly equivalent: $${monthlyAmount.toFixed(2)}`)
-          }
-          
-          revenueByCustomer[customerId].monthlyRevenue += monthlyAmount
         }
       }
       
@@ -337,28 +345,37 @@ function Metrics() {
         ? totalMonthlyRevenue / customerRevenueList.length 
         : 0
       
-      // NEW APPROACH: Get all customers who have made at least one non-refunded payment
+      // NEW APPROACH: Get all customers who have made at least one non-refunded payment (within date range)
       // Group them by the month they were created in Stripe
       console.log('📊 Calculating paying customers by creation month...')
       
-      // First, identify all customers with non-refunded payments
+      // First, identify all customers with non-refunded payments within the date range
       const customersWithPayments = new Set()
       for (const charge of allCharges) {
-        if (charge.status === 'succeeded' && !charge.refunded && charge.customer) {
-          customersWithPayments.add(charge.customer)
+        const chargeDate = new Date(charge.created * 1000)
+        
+        // Only include charges within the date range
+        if (chargeDate >= projectionStartDate && chargeDate <= projectionEndDate) {
+          if (charge.status === 'succeeded' && !charge.refunded && charge.customer) {
+            customersWithPayments.add(charge.customer)
+          }
         }
       }
       
-      console.log(`✅ Found ${customersWithPayments.size} customers with non-refunded payments`)
+      console.log(`✅ Found ${customersWithPayments.size} customers with non-refunded payments in date range`)
       
       // Calculate revenue per customer per month (total revenue / paying customers / months with transactions)
-      // Find all unique months where we had successful charges
+      // Find all unique months where we had successful charges within the date range
       const monthsWithRevenue = new Set()
       for (const charge of allCharges) {
-        if (charge.status === 'succeeded' && !charge.refunded) {
-          const chargeDate = new Date(charge.created * 1000)
-          const monthKey = `${chargeDate.getUTCFullYear()}-${String(chargeDate.getUTCMonth() + 1).padStart(2, '0')}`
-          monthsWithRevenue.add(monthKey)
+        const chargeDate = new Date(charge.created * 1000)
+        
+        // Only include charges within the date range
+        if (chargeDate >= projectionStartDate && chargeDate <= projectionEndDate) {
+          if (charge.status === 'succeeded' && !charge.refunded) {
+            const monthKey = `${chargeDate.getUTCFullYear()}-${String(chargeDate.getUTCMonth() + 1).padStart(2, '0')}`
+            monthsWithRevenue.add(monthKey)
+          }
         }
       }
       
@@ -391,11 +408,11 @@ function Metrics() {
       console.log('📊 Paying customers by creation month:', payingCustomersByMonth)
       console.log('📊 Total paying customers in date range:', Object.values(payingCustomersByMonth).reduce((sum, count) => sum + count, 0))
       
-      // Group all customers by month (including current month)
+      // Group all customers by month (within date range)
       const allCustomersByMonth = {}
       for (const customer of allCustomers) {
         const createdDate = new Date(customer.created * 1000)
-        if (createdDate >= projectionStartDate) {
+        if (createdDate >= projectionStartDate && createdDate <= projectionEndDate) {
           const monthKey = `${createdDate.getUTCFullYear()}-${String(createdDate.getUTCMonth() + 1).padStart(2, '0')}`
           allCustomersByMonth[monthKey] = (allCustomersByMonth[monthKey] || 0) + 1
         }
@@ -445,7 +462,7 @@ function Metrics() {
         }))
       
       // Format date range
-      const dateRange = `All Time (Growth data from ${projectionStartDate.toLocaleDateString()} - ${projectionEndDate.toLocaleDateString()})`
+      const dateRange = `Nov 2025 - Jan 2026 (${projectionStartDate.toLocaleDateString()} - ${projectionEndDate.toLocaleDateString()})`
       
       const data = {
         totalRevenue,
@@ -647,6 +664,21 @@ function Metrics() {
       <div className="metrics-header">
         <h1>Metrics Dashboard</h1>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button 
+            onClick={() => loadMetricsData(true)}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.5rem',
+              cursor: 'pointer',
+              fontWeight: '500',
+              fontSize: '0.875rem'
+            }}
+          >
+            🔄 Refresh Data
+          </button>
           {dateRangeDisplay && (
             <div className="date-range-display">
               <span className="date-range-label">Data Period:</span>
@@ -675,7 +707,7 @@ function Metrics() {
             <h3>Total Revenue</h3>
             <div className="metric-value">{formatCurrency(metrics.totalRevenue)}</div>
             <div className="metric-subtitle">
-              All-time revenue
+              Nov 2025 - Jan 2026
             </div>
           </div>
         </div>

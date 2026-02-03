@@ -8,7 +8,7 @@ import PrivacyPolicy from './PrivacyPolicy.jsx'
 import Terms from './Terms.jsx'
 import Login from './Login.jsx'
 import SignUp from './SignUp.jsx'
-import Free from './Free.jsx'
+import CreateAccount from './CreateAccount.jsx'
 import Giveaway from './Giveaway.jsx'
 import Dashboard from './Dashboard.jsx'
 import { AuthProvider, ProtectedRoute, AdminRoute } from './AuthContext.jsx'
@@ -41,8 +41,8 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <LandingPage /> },
       { path: 'login', element: <Login /> },
-      { path: 'signup', element: <Navigate to="/free" replace /> },
-      { path: 'free', element: <Free /> },
+      { path: 'signup', element: <SignUp /> },
+      { path: 'createaccount', element: <CreateAccount /> },
       { path: 'giveaway', element: <Giveaway /> },
       { path: 'privacy', element: <PrivacyPolicy /> },
       { path: 'terms', element: <Terms /> },

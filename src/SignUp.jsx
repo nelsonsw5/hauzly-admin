@@ -41,6 +41,9 @@ function SignUp() {
   const [promoCode, setPromoCode] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [promoCodeError, setPromoCodeError] = useState('')
+  const [promoCodeValidating, setPromoCodeValidating] = useState(false)
+  const [promoCodeValidated, setPromoCodeValidated] = useState(false)
   const [costcoCardImage, setCostcoCardImage] = useState(null)
   const [costcoCardPreview, setCostcoCardPreview] = useState(null)
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -226,6 +229,25 @@ function SignUp() {
     });
   }, [planType, billingCycle, selectedPlan]);
 
+  // Auto-apply STARTER promo code for Basic Monthly
+  useEffect(() => {
+    // Only auto-apply if we're on Basic Monthly subscription
+    const shouldApplyStarter = planType === 'subscription' && selectedPlan === 'basic' && billingCycle === 'monthly';
+    
+    if (shouldApplyStarter && promoCode !== 'STARTER') {
+      console.log('🎟️ Auto-applying STARTER promo code for Basic Monthly');
+      setPromoCode('STARTER');
+      setPromoCodeError('');
+      setPromoCodeValidated(false);
+    } else if (!shouldApplyStarter && promoCode === 'STARTER') {
+      // Clear STARTER code if user switches away from Basic Monthly
+      console.log('🎟️ Clearing STARTER promo code (plan changed)');
+      setPromoCode('');
+      setPromoCodeError('');
+      setPromoCodeValidated(false);
+    }
+  }, [planType, selectedPlan, billingCycle, promoCode]);
+
   // Fetch price data from Firestore
   useEffect(() => {
     async function fetchPriceData() {
@@ -281,11 +303,47 @@ function SignUp() {
     )
   }
 
+  // Function to validate promo code with backend
+  const validatePromoCode = async (code, priceId) => {
+    if (!code.trim()) {
+      return { valid: true } // Empty promo code is valid (optional field)
+    }
+
+    try {
+      setPromoCodeValidating(true)
+      setPromoCodeError('')
+      
+      const response = await fetch(`${FIREBASE_FUNCTIONS_BASE_URL}/validate_promo_code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          promo_code: code.trim(),
+          price_id: priceId
+        })
+      })
+
+      const data = await response.json()
+      
+      if (!response.ok || data.status === 'error') {
+        throw new Error(data.message || 'Failed to validate promo code')
+      }
+
+      return data
+    } catch (err) {
+      console.error('Error validating promo code:', err)
+      throw err
+    } finally {
+      setPromoCodeValidating(false)
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('📝 Form submission started');
     setError('');
+    setPromoCodeError('');
 
     try {
       console.group('✅ Form Validation');
@@ -355,14 +413,24 @@ function SignUp() {
         throw new Error('Please enter a valid email address');
       }
 
-      // Validate promo code if entered
+      // Validate promo code with backend if subscription plan
       if (promoCode.trim() && planType === 'subscription') {
-        console.log('Validating promo code:', promoCode.trim().toUpperCase());
-        const validPromoCodes = ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'CAMI', 'MIKAELA', 'JEZNI', 'HAULZY-INFLUENCER', 'INFLUENCER'];
-        if (!validPromoCodes.includes(promoCode.trim().toUpperCase())) {
-          throw new Error(`Invalid promo code: "${promoCode}"`);
+        console.log('Validating promo code with backend:', promoCode.trim().toUpperCase());
+        
+        // Determine price ID for validation
+        let priceId = billingCycle === 'yearly' 
+          ? subscriptionPlans[selectedPlan].priceYearlyId 
+          : subscriptionPlans[selectedPlan].priceMonthlyId;
+        
+        const validation = await validatePromoCode(promoCode, priceId);
+        
+        if (!validation.valid) {
+          setPromoCodeError(validation.message || 'Invalid promo code');
+          throw new Error(validation.message || 'Invalid promo code');
         }
-        console.log('✅ Promo code is valid');
+        
+        console.log('✅ Promo code validated successfully:', validation);
+        setPromoCodeValidated(true);
       }
       
       console.log('✅ All validations passed');
@@ -424,6 +492,10 @@ function SignUp() {
         receiveTextUpdates: receiveTextUpdates,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        ...(promoCode.trim() && {
+          signupPromoCode: promoCode.trim().toUpperCase(),
+          signupPromoCodeEnteredAt: new Date().toISOString()
+        }),
         ...(costcoCardData && {
           costcoCard: {
             url: costcoCardData.downloadUrl,
@@ -1173,6 +1245,7 @@ function SignUp() {
                   {visiblePlans.map(([planId, plan]) => {
                       const { amount, period } = getDisplayPrice(planId)
                       const isSelected = selectedPlan === planId
+                      const isBasicPlan = planId === 'basic'
                       return (
                         <button
                           key={planId}
@@ -1228,13 +1301,33 @@ function SignUp() {
                               ✓
                             </div>
                           )}
+                          {isBasicPlan && billingCycle === 'monthly' && (
+                            <div style={{
+                              position: 'absolute',
+                              top: window.innerWidth <= 480 ? '-10px' : '-12px',
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              backgroundColor: '#FFD700',
+                              color: '#000',
+                              fontSize: window.innerWidth <= 480 ? '0.7rem' : '0.75rem',
+                              fontWeight: 700,
+                              padding: window.innerWidth <= 480 ? '0.3rem 0.6rem' : '0.35rem 0.75rem',
+                              borderRadius: '999px',
+                              boxShadow: '0 2px 8px rgba(255, 215, 0, 0.4)',
+                              whiteSpace: 'nowrap',
+                              border: '2px solid #FFA500'
+                            }}>
+                              🎉 2 months free
+                            </div>
+                          )}
                           <h3 style={{
                             margin: 0,
                             fontSize: window.innerWidth <= 480 ? '1rem' : window.innerWidth <= 768 ? '1.15rem' : '1.35rem',
                             fontWeight: 700,
                             fontFamily: 'var(--font-heading)',
                             textAlign: 'center',
-                            lineHeight: 1.2
+                            lineHeight: 1.2,
+                            marginTop: isBasicPlan ? (window.innerWidth <= 480 ? '0.5rem' : '0.75rem') : 0
                           }}>
                             {plan.name}
                           </h3>
@@ -1779,37 +1872,69 @@ function SignUp() {
 
             {/* Promo Code Input - Only show for subscription plans */}
             {planType === 'subscription' && (
-              <div style={{ position: 'relative' }}>
-                <input 
-                  type="text" 
-                  placeholder="Promo Code (optional)" 
-                  value={promoCode} 
-                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())} 
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: window.innerWidth <= 480 ? '0.375rem' : '0.5rem'
+              }}>
+                <label style={{
+                  fontWeight: 600,
+                  color: 'var(--text-dark)',
+                  fontFamily: 'var(--font-body)',
+                  fontSize: window.innerWidth <= 480 ? '0.875rem' : window.innerWidth <= 768 ? '0.95rem' : '1rem'
+                }}>
+                  Promo Code {promoCode === 'STARTER' ? '(Auto-applied: 2 months free!)' : '(Optional)'}
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter promo code"
+                  value={promoCode}
+                  onChange={(e) => {
+                    setPromoCode(e.target.value)
+                    setPromoCodeError('')
+                    setPromoCodeValidated(false)
+                  }}
+                  disabled={promoCode === 'STARTER'}
                   style={{
                     ...inputStyle,
                     textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    paddingRight: promoCode && ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'CAMI', 'MIKAELA', 'JEZNI', 'HAULZY-INFLUENCER', 'INFLUENCER'].includes(promoCode.toUpperCase()) 
-                      ? window.innerWidth <= 480 ? '90px' : '110px' 
-                      : inputStyle.paddingRight
-                  }} 
+                    borderColor: promoCodeError ? '#dc2626' : promoCodeValidated ? 'var(--primary-color)' : 'var(--border-color)',
+                    opacity: promoCode === 'STARTER' ? 0.7 : 1,
+                    cursor: promoCode === 'STARTER' ? 'not-allowed' : 'text'
+                  }}
                 />
-                {promoCode && ['HOLIDAYS', 'LEXI', 'CHELSEA', 'CAROLINE', 'CAMI', 'MIKAELA', 'JEZNI', 'HAULZY-INFLUENCER', 'INFLUENCER'].includes(promoCode.toUpperCase()) && (
-                  <span style={{
-                    position: 'absolute',
-                    right: window.innerWidth <= 480 ? '8px' : '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: 'var(--primary-color)',
-                    fontWeight: '600',
-                    fontSize: window.innerWidth <= 480 ? '0.75rem' : '0.85rem',
-                    backgroundColor: 'rgba(0, 191, 179, 0.1)',
-                    padding: window.innerWidth <= 480 ? '3px 6px' : '4px 8px',
-                    borderRadius: '4px',
-                    whiteSpace: 'nowrap'
+                {promoCodeError && (
+                  <p style={{
+                    margin: 0,
+                    fontSize: window.innerWidth <= 480 ? '0.75rem' : window.innerWidth <= 768 ? '0.8rem' : '0.85rem',
+                    color: '#dc2626',
+                    fontFamily: 'var(--font-body)',
+                    fontWeight: 600
                   }}>
-                    {promoCode.toUpperCase() === 'HAULZY-INFLUENCER' ? '1 year free' : promoCode.toUpperCase() === 'INFLUENCER' ? '3 mo free' : '2 mo free'}
-                  </span>
+                    ⚠️ {promoCodeError}
+                  </p>
+                )}
+                {promoCodeValidated && !promoCodeError && (
+                  <p style={{
+                    margin: 0,
+                    fontSize: window.innerWidth <= 480 ? '0.75rem' : window.innerWidth <= 768 ? '0.8rem' : '0.85rem',
+                    color: 'var(--primary-color)',
+                    fontFamily: 'var(--font-body)',
+                    fontWeight: 600
+                  }}>
+                    ✓ Promo code applied successfully
+                  </p>
+                )}
+                {promoCode === 'STARTER' && (
+                  <p style={{
+                    margin: 0,
+                    fontSize: window.innerWidth <= 480 ? '0.75rem' : window.innerWidth <= 768 ? '0.8rem' : '0.85rem',
+                    color: 'var(--primary-color)',
+                    fontFamily: 'var(--font-body)',
+                    fontWeight: 600
+                  }}>
+                    🎉 2 months free automatically applied!
+                  </p>
                 )}
               </div>
             )}
@@ -1862,7 +1987,7 @@ function SignUp() {
 
           <button 
             type="submit" 
-            disabled={submitting}
+            disabled={submitting || promoCodeValidating}
             onClick={(e) => {
               console.log('🖱️ Button clicked!');
               console.log('Button type:', e.currentTarget.type);
@@ -1871,33 +1996,33 @@ function SignUp() {
             }}
             style={{ 
                 padding: window.innerWidth <= 480 ? '1rem' : window.innerWidth <= 768 ? '1rem 1.25rem' : '1rem 1.5rem',
-                background: submitting ? 'var(--border-color)' : 'var(--primary-color)',
+                background: (submitting || promoCodeValidating) ? 'var(--border-color)' : 'var(--primary-color)',
                 color: 'var(--text-light)',
               border: 'none',
                 borderRadius: window.innerWidth <= 480 ? '8px' : '10px',
                 fontWeight: 700,
-              cursor: submitting ? 'not-allowed' : 'pointer',
-              opacity: submitting ? 0.7 : 1,
+              cursor: (submitting || promoCodeValidating) ? 'not-allowed' : 'pointer',
+              opacity: (submitting || promoCodeValidating) ? 0.7 : 1,
                 fontFamily: 'var(--font-body)',
                 transition: 'all 0.2s ease',
-                boxShadow: submitting ? 'none' : '0 2px 4px rgba(0, 191, 179, 0.2)',
+                boxShadow: (submitting || promoCodeValidating) ? 'none' : '0 2px 4px rgba(0, 191, 179, 0.2)',
                 minHeight: window.innerWidth <= 480 ? '48px' : '52px',
                 fontSize: window.innerWidth <= 480 ? '1rem' : window.innerWidth <= 768 ? '1.1rem' : '1.05rem',
             }}
             onMouseEnter={(e) => {
-              if (!submitting && window.innerWidth > 768) {
+              if (!submitting && !promoCodeValidating && window.innerWidth > 768) {
                 e.currentTarget.style.transform = 'translateY(-2px)'
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 191, 179, 0.3)'
               }
             }}
             onMouseLeave={(e) => {
-              if (!submitting && window.innerWidth > 768) {
+              if (!submitting && !promoCodeValidating && window.innerWidth > 768) {
                 e.currentTarget.style.transform = 'translateY(0)'
                 e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 191, 179, 0.2)'
               }
             }}
           >
-            {submitting ? 'Creating account...' : 'Sign Up'}
+            {promoCodeValidating ? 'Validating promo code...' : submitting ? 'Creating account...' : 'Sign Up'}
           </button>
 
             <div style={{ 

@@ -15,7 +15,7 @@ const FIREBASE_FUNCTIONS_BASE_URL = import.meta.env.VITE_FIREBASE_URL
 // Toggle to show/hide Family plan - set to false to hide it
 const showFamilyPlan = false
 
-function Free() {
+function CreateAccount() {
   const navigate = useNavigate()
   const location = useLocation()
   
@@ -1351,33 +1351,13 @@ function Free() {
                               ✓
                             </div>
                           )}
-                          {isBasicPlan && billingCycle === 'monthly' && (
-                            <div style={{
-                              position: 'absolute',
-                              top: window.innerWidth <= 480 ? '-10px' : '-12px',
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              backgroundColor: '#FFD700',
-                              color: '#000',
-                              fontSize: window.innerWidth <= 480 ? '0.7rem' : '0.75rem',
-                              fontWeight: 700,
-                              padding: window.innerWidth <= 480 ? '0.3rem 0.6rem' : '0.35rem 0.75rem',
-                              borderRadius: '999px',
-                              boxShadow: '0 2px 8px rgba(255, 215, 0, 0.4)',
-                              whiteSpace: 'nowrap',
-                              border: '2px solid #FFA500'
-                            }}>
-                              🎉 2 months free
-                            </div>
-                          )}
                           <h3 style={{
                             margin: 0,
                             fontSize: window.innerWidth <= 480 ? '1rem' : window.innerWidth <= 768 ? '1.15rem' : '1.35rem',
                             fontWeight: 700,
                             fontFamily: 'var(--font-heading)',
                             textAlign: 'center',
-                            lineHeight: 1.2,
-                            marginTop: isBasicPlan ? (window.innerWidth <= 480 ? '0.5rem' : '0.75rem') : 0
+                            lineHeight: 1.2
                           }}>
                             {plan.name}
                           </h3>
@@ -2127,4 +2107,4 @@ const inputStyle = {
   boxSizing: 'border-box',
 };
 
-export default Free;
+export default CreateAccount;

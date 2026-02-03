@@ -96,7 +96,7 @@ function LandingPage() {
         >
           <button
             className="cta-primary"
-            onClick={() => window.location.href = 'https://usehaulzy.com/free'}
+            onClick={() => navigate('/createaccount')}
           >
             Try it out
           </button>
@@ -759,7 +759,7 @@ function LandingPage() {
         <button 
           className="cta-primary" 
           style={{ fontSize: '1.2rem', padding: '1rem 2rem' }}
-          onClick={() => window.location.href = 'https://usehaulzy.com/free'}
+          onClick={() => navigate('/createaccount')}
         >
           Book your first haul
         </button>
